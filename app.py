@@ -23,7 +23,7 @@ MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
 class GoogleCloudVision:
     def __init__(self):
         # Initialize a client and authenticate with credentials
-        self.client = vision.ImageAnnotatorClient()
+        self.client = vision.ImageAnnotatorClient().from_service_account_json(st.secrets["gcp_service_account"])
 
     def find_landmark(self, image_data):
         # Initialize a client
@@ -34,9 +34,6 @@ class GoogleCloudVision:
         response = client.landmark_detection(image=image)
         landmarks = response.landmark_annotations
         return landmarks
-
-
-import branca.colormap as cm
 
 
 class FoliumMap:
