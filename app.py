@@ -15,17 +15,14 @@ from branca.element import Template, MacroElement
 
 
 WORKING_DIR = os.getcwd()
-CREDS_FILE = os.path.join(WORKING_DIR, "gcp_credentials.json")
 IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
 MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
 
 
 # Creating a client
 class GoogleCloudVision:
-    def __init__(self, credentials=CREDS_FILE):
+    def __init__(self):
         # Initialize a client and authenticate with credentials
-        self.credentials = credentials
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.credentials
         self.client = vision.ImageAnnotatorClient()
 
     def find_landmark(self, image_data):
