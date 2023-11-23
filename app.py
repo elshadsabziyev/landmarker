@@ -27,7 +27,7 @@ class GoogleCloudVision:
 
     def find_landmark(self, image_data):
         # Initialize a client
-        client = vision.ImageAnnotatorClient.from_service_account_json(self.credentials)
+        client = self.client
         # Load image into memory
         image = vision.Image(content=image_data.read())
         # Perform landmark detection
