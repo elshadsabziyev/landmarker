@@ -18,13 +18,14 @@ from PIL import Image as Img
 WORKING_DIR = os.getcwd()
 IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
 MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
+# JSON is stored in environment variable called AUTH
 
 
 # Creating a client
 class GoogleCloudVision:
     def __init__(self):
         # Initialize a client and authenticate with credentials using streamlit secrets.toml
-        self.client = vision.ImageAnnotatorClient()
+        self.client = vision.ImageAnnotatorClient().from_service_account_json(st.secrets["AUTH"])
 
     def find_landmark(self, image_data):
         # Initialize a client
