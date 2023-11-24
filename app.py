@@ -13,31 +13,52 @@ import streamlit.components.v1 as components
 import branca.colormap as cm
 from branca.element import Template, MacroElement
 from PIL import Image as Img
+import toml
 import json
-import ast
 
 WORKING_DIR = os.getcwd()
 IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
 MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
-# JSON is stored in environment variable called AUTH, AUTH == """{JSON}"""
-AUTH = st.secrets["AUTH"]
+type = st.secrets["type"]
+project_id = st.secrets["project_id"]
+private_key_id = st.secrets["private_key_id"]
+private_key = st.secrets["private_key"]
+client_email = st.secrets["client_email"]
+client_id = st.secrets["client_id"]
+auth_uri = st.secrets["auth_uri"]
+token_uri = st.secrets["token_uri"]
+auth_provider_x509_cert_url = st.secrets["auth_provider_x509_cert_url"]
+client_x509_cert_url = st.secrets["client_x509_cert_url"]
+universe_domain = st.secrets["universe_domain"]
 
-# Remove any leading/trailing whitespace
-AUTH = AUTH.strip()
+# Creating a credentials dictionary
+credentials_dict = {
+    "type": type,
+    "project_id": project_id,
+    "private_key_id": private_key_id,
+    "private_key": private_key,
+    "client_email": client_email,
+    "client_id": client_id,
+    "auth_uri": auth_uri,
+    "token_uri": token_uri,
+    "auth_provider_x509_cert_url": auth_provider_x509_cert_url,
+    "client_x509_cert_url": client_x509_cert_url,
+    "universe_domain": universe_domain,
+}
 
-try:
-    # Use ast.literal_eval() to parse the string as a Python literal
-    JSON_AUTH = ast.literal_eval(AUTH)
-    # Use JSON_AUTH as needed
-except (SyntaxError, ValueError) as e:
-    print("Error evaluating AUTH string:", e)
+# Writing credentials to a file
+with open("credentials.json", "w") as file:
+    json.dump(credentials_dict, file)
+
+# Setting credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 
 
 # Creating a client
 class GoogleCloudVision:
     def __init__(self):
         # Initialize a client and authenticate with credentials using streamlit secrets.toml
-        self.client = vision.ImageAnnotatorClient().from_service_account_json(JSON_AUTH)
+        self.client = vision.ImageAnnotatorClient()
 
     def find_landmark(self, image_data):
         # Initialize a client
