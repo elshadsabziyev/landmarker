@@ -13,14 +13,14 @@ import streamlit.components.v1 as components
 import branca.colormap as cm
 from branca.element import Template, MacroElement
 from PIL import Image as Img
-
+import json
 
 WORKING_DIR = os.getcwd()
 IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
 MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
 # JSON is stored in environment variable called AUTH, AUTH == """{JSON}"""
 # convert AUTH to dict
-AUTH = eval(st.secrets["AUTH"])
+AUTH = json.loads(st.secrets["AUTH"])
 
 
 # Creating a client
