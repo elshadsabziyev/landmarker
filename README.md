@@ -8,7 +8,7 @@
 - [⚙️ Installation](#%EF%B8%8F-installation)
 - [🔧 Usage](#-usage)
 - [🏗️ Architecture](#%EF%B8%8F-architecture)
-- [🗺️ Roadmap](#-roadmap)
+- [🗺️ Roadmap](#%EF%B8%8F-roadmap)
 - [👥 Project Team](#-project-team)
 - [🤝 Contributing](#-contributing)
 - [📝 License](#-license)
