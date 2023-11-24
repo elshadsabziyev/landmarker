@@ -150,9 +150,9 @@ class FoliumMap:
         macro = MacroElement()
         macro._template = Template(template)
         self.map.get_root().add_child(macro)
-        # do not save map only return map
-        # self.map.save(map_name)
-        return self.map
+
+        # Save the map
+        self.map.save(map_name)
 
 
 # main function to find location of the landmark which name is given in IMAGE_NAME
@@ -206,10 +206,11 @@ def main():
             # add heatmap on map for each location of landmark
             fm.add_heatmap(lat, lon)
         # save map
-        map_file = os.path.join(MAPS_DIR, "output.html")
-        fm.save_map(map_file)
-        # Display the map in the Streamlit app (map is not saved)=, it is returned
-        st.write(fm.save_map(map_file))
+        fm.save_map("map.html")
+        # display map on streamlit
+        HtmlFile = open("map.html", "r", encoding="utf-8")
+        source_code = HtmlFile.read()
+        components.html(source_code, height=700, width=700)
 
     else:
         st.write("Please upload an image.")
