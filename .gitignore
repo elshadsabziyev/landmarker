@@ -6,6 +6,7 @@ __pycache__/
 # credentials
 gcp_credentials.json
 .streamlit/secrets.toml
+C:\Users\sabzi\OneDrive - Baku Higher Oil School\Dev\Python\LoBot\output_maps\output.html
 # C extensions
 *.so
 
@@ -153,3 +154,5 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+output_maps/output.html
+lobot-406018-71f34c6d3d6a.json
