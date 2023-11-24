@@ -14,20 +14,30 @@ import branca.colormap as cm
 from branca.element import Template, MacroElement
 from PIL import Image as Img
 import json
+import ast
 
 WORKING_DIR = os.getcwd()
 IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
 MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
 # JSON is stored in environment variable called AUTH, AUTH == """{JSON}"""
-# convert AUTH to dict
-AUTH = json.loads(st.secrets["AUTH"])
+AUTH = st.secrets["AUTH"]
+
+# Remove any leading/trailing whitespace
+AUTH = AUTH.strip()
+
+try:
+    # Use ast.literal_eval() to parse the string as a Python literal
+    JSON_AUTH = ast.literal_eval(AUTH)
+    # Use JSON_AUTH as needed
+except (SyntaxError, ValueError) as e:
+    print("Error evaluating AUTH string:", e)
 
 
 # Creating a client
 class GoogleCloudVision:
     def __init__(self):
         # Initialize a client and authenticate with credentials using streamlit secrets.toml
-        self.client = vision.ImageAnnotatorClient().from_service_account_json(AUTH)
+        self.client = vision.ImageAnnotatorClient().from_service_account_json(JSON_AUTH)
 
     def find_landmark(self, image_data):
         # Initialize a client
