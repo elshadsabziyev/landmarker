@@ -128,7 +128,19 @@ For local usage on Windows or other operating systems, follow similar steps prov
 
 ## 👥 Project Team
 
-- **Project Manager & Lead Developer**: [Your Name](https://github.com/your-profile)
-- **Google Cloud API Integration**: [Team Member Name](https://github.com/member-profile)
-- **Mapping & Visualization**: [Team Member Name](https://github.com/member-profile)
-- **UI/UX & Streamlit Development**: [Team Member Name
+- [Elshad Sabziyev](https://github.com/elshadsabziyev)
+- [Arif Najafov](https://github.com/member-profile)
+
+## 🤝 Contributing
+
+Contributions to improve functionality or add new features are welcome! To contribute:
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/your-feature`
+3. Make changes and commit: `git commit -m 'Add your feature'`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Submit a pull request.
+
+## 📝 License
+
+This project is licensed under the [MIT License](LICENSE).
