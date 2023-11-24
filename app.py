@@ -18,7 +18,9 @@ from PIL import Image as Img
 WORKING_DIR = os.getcwd()
 IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
 MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
-# JSON is stored in environment variable called AUTH
+# JSON is stored in environment variable called AUTH, AUTH == """{JSON}"""
+# convert AUTH to dict
+AUTH = eval(st.secrets["AUTH"])
 
 
 # Creating a client
