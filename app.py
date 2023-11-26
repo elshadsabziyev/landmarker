@@ -1,11 +1,5 @@
-# A python code to find the landmark name from given image,
-# get latitude and longitude of the landmark
-# and display it on the map using folium library and Google image vision
-
-# Importing required libraries
-import os
+# Import necessary libraries
 from google.cloud import vision
-from google.cloud.vision import Image
 import folium
 from folium import plugins
 import streamlit as st
@@ -13,89 +7,141 @@ import streamlit.components.v1 as components
 import branca.colormap as cm
 from branca.element import Template, MacroElement
 from PIL import Image as Img
-import toml
-import json
-
-WORKING_DIR = os.getcwd()
-IMAGES_DIR = os.path.join(WORKING_DIR, "input_images")
-MAPS_DIR = os.path.join(WORKING_DIR, "output_maps")
-type = st.secrets["type"]
-project_id = st.secrets["project_id"]
-private_key_id = st.secrets["private_key_id"]
-private_key = st.secrets["private_key"]
-client_email = st.secrets["client_email"]
-client_id = st.secrets["client_id"]
-auth_uri = st.secrets["auth_uri"]
-token_uri = st.secrets["token_uri"]
-auth_provider_x509_cert_url = st.secrets["auth_provider_x509_cert_url"]
-client_x509_cert_url = st.secrets["client_x509_cert_url"]
-universe_domain = st.secrets["universe_domain"]
-
-# Creating a credentials dictionary
-credentials_dict = {
-    "type": type,
-    "project_id": project_id,
-    "private_key_id": private_key_id,
-    "private_key": private_key,
-    "client_email": client_email,
-    "client_id": client_id,
-    "auth_uri": auth_uri,
-    "token_uri": token_uri,
-    "auth_provider_x509_cert_url": auth_provider_x509_cert_url,
-    "client_x509_cert_url": client_x509_cert_url,
-    "universe_domain": universe_domain,
-}
-
-# Writing credentials to a file
-with open("credentials.json", "w") as file:
-    json.dump(credentials_dict, file)
-
-# Setting credentials
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
+from google.oauth2 import service_account
+import base64
 
 
-# Creating a client
-class GoogleCloudVision:
+# Define the main App class
+class App:
     def __init__(self):
-        # Initialize a client and authenticate with credentials using streamlit secrets.toml
-        self.client = vision.ImageAnnotatorClient()
+        """
+        Initialize the App class.
+        """
+
+        # Create a credentials dictionary using Streamlit secrets
+        # These secrets are used to authenticate with the Google Cloud Vision API
+        credentials_dict = {
+            "type": st.secrets["type"],
+            "project_id": st.secrets["project_id"],
+            "private_key_id": st.secrets["private_key_id"],
+            "private_key": st.secrets["private_key"],
+            "client_email": st.secrets["client_email"],
+            "client_id": st.secrets["client_id"],
+            "auth_uri": st.secrets["auth_uri"],
+            "token_uri": st.secrets["token_uri"],
+            "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
+            "client_x509_cert_url": st.secrets["client_x509_cert_url"],
+            "universe_domain": st.secrets["universe_domain"],
+        }
+
+        # Create a credentials object from the dictionary
+        # This object will be used to authenticate with the Google Cloud Vision API
+        self.credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict
+        )
+
+
+# Google Cloud Vision class for landmark detection
+class GoogleCloudVision(App):
+    def __init__(self):
+        """
+        Initialize the GoogleCloudVision class.
+        This class is a child of the App class, so we call the constructor of the parent class.
+        """
+
+        super().__init__()
+
+        # Initialize a client for the Google Cloud Vision API
+        # We authenticate with the API using the credentials object created in the parent class
+        self.client = vision.ImageAnnotatorClient(credentials=self.credentials)
 
     def find_landmark(self, image_data):
-        # Initialize a client
-        client = self.client
-        # Load image into memory
+        """
+        Detect landmarks in an image using the Google Cloud Vision API.
+
+        Parameters:
+        image_data (bytes): The image data to analyze.
+
+        Returns:
+        landmarks (list): A list of detected landmarks.
+        """
+
+        # Load the image data into memory
         image_data.seek(0)
         image = vision.Image(content=image_data.read())
-        # Perform landmark detection
-        response = client.landmark_detection(image=image)
+
+        # Perform landmark detection on the image
+        # The response is a list of detected landmarks
+        response = self.client.landmark_detection(image=image)
         landmarks = response.landmark_annotations
+
         return landmarks
 
 
 class FoliumMap:
-    def __init__(self):
-        self.map = folium.Map(location=[0, 0], zoom_start=2)
-        # Define a colormap
+    def __init__(self, zoom_start_=30):
+        """
+        Initialize the FoliumMap class.
+
+        Parameters:
+        zoom_start (int): Initial zoom level for the map.
+        """
+
+        # Initialize the maximum score and its corresponding location
+        self.max_score_location = [0, 0]
+        self.max_score = 0
+        self.zoom_start = zoom_start_
+
+        # Create a Folium map centered at the maximum score location
+        self.map = folium.Map(
+            location=self.max_score_location, zoom_start=self.zoom_start
+        )
+
+        # Initialize a linear color map with white, yellow, and green colors
+        # The color map is used to color markers based on their similarity score
+        # Scores of 0 are colored white, scores of 50 are colored yellow, and scores of 100 are colored green
         self.colormap = cm.LinearColormap(
-            colors=["white", "yellow", "green"],
-            index=[0, 50, 100],
-            vmin=0,
-            vmax=100,
-            caption="Similarity score",
+            colors=["white", "yellow", "green"],  # Colors for the color map
+            index=[0, 50, 100],  # Scores corresponding to the colors
+            vmin=0,  # Minimum score
+            vmax=100,  # Maximum score
+            caption="Similarity score",  # Caption for the color map
         )
 
     def add_marker(self, lat, lon, landmark_name, confidence):
-        # Normalize the confidence score to [0, 1]
-        confidence_score = float(confidence.split(": ")[1].strip("%")) / 100
-        # Get the color from the colormap
+        """
+        Add a marker to the map.
 
+        Parameters:
+        lat (float): Latitude of the marker.
+        lon (float): Longitude of the marker.
+        landmark_name (str): Name of the landmark.
+        confidence (str): Confidence score of the landmark detection.
+        """
+
+        # Convert the confidence score from a percentage to a decimal
+        confidence_score = float(confidence.split(": ")[1].strip("%")) / 100
+
+        # If this location's score is higher than the current max score, update the max score and location
+        if confidence_score > self.max_score:
+            self.max_score = confidence_score
+            self.max_score_location = [lat, lon]
+
+        # Update the map center and zoom level to the max score location
+        self.map.location = self.max_score_location
+
+        # Determine the marker color based on the confidence score
+        # If the confidence score is less than 50%, the marker color is the first color in the colormap
         if confidence_score < 0.50:
             marker_color = self.colormap(0)
+        # If the confidence score is less than 80%, the marker color is the second color in the colormap
         elif confidence_score < 0.80:
             marker_color = self.colormap(50)
+        # If the confidence score is 80% or higher, the marker color is the third color in the colormap
         else:
             marker_color = self.colormap(100)
 
+        # Define the marker icons
         icon_pin = folium.features.DivIcon(
             icon_size=(30, 30),
             icon_anchor=(15, 15),
@@ -119,29 +165,54 @@ class FoliumMap:
             f'<line x1="6" y1="6" x2="18" y2="18"></line>'
             "</svg>",
         )
+
+        # Add a marker to the map at the specified latitude and longitude
+        # The marker icon and popup text depend on the confidence score
         if confidence_score > 0.80:
+            # If the confidence score is greater than 80%, use the star icon
             folium.Marker(
-                [lat, lon], popup=landmark_name + " " + confidence, icon=icon_star
+                [lat, lon],  # Position of the marker
+                popup=landmark_name + " " + confidence,  # Popup text
+                icon=icon_star,  # Icon for the marker
             ).add_to(self.map)
         elif confidence_score > 0.50:
+            # If the confidence score is greater than 50%, use the pin icon
             folium.Marker(
-                [lat, lon], popup=landmark_name + " " + confidence, icon=icon_pin
+                [lat, lon],  # Position of the marker
+                popup=landmark_name + " " + confidence,  # Popup text
+                icon=icon_pin,  # Icon for the marker
             ).add_to(self.map)
         else:
+            # If the confidence score is 50% or less, use the X icon
             folium.Marker(
-                [lat, lon],
-                popup=landmark_name + " " + confidence,
-                icon=icon_x,
+                [lat, lon],  # Position of the marker
+                popup=landmark_name + " " + confidence,  # Popup text
+                icon=icon_x,  # Icon for the marker
             ).add_to(self.map)
 
     def add_heatmap(self, lat, lon):
-        folium.plugins.HeatMap([[lat, lon]]).add_to(self.map)
+        """
+        Add a heatmap to the map at the specified latitude and longitude.
 
-    def save_map(self, map_name):
-        # Add the colormap to the map
-        self.map.add_child(self.colormap)
+        Parameters:
+        lat (float): Latitude of the heatmap.
+        lon (float): Longitude of the heatmap.
+        """
 
-        # Add Font Awesome CSS
+        # Add a heatmap to the map at the specified latitude and longitude
+        folium.plugins.HeatMap(
+            [[lat, lon]], radius=20, blur=12, min_opacity=0.5
+        ).add_to(self.map)
+
+    def display_map(self, max_content_width):
+        """
+        Display the map.
+
+        Parameters:
+        max_content_width (int): Maximum content width for the map.
+        """
+
+        # Add a link to the Font Awesome stylesheet for the marker icons
         template = """
         {% macro html(this, kwargs) %}
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
@@ -151,70 +222,131 @@ class FoliumMap:
         macro._template = Template(template)
         self.map.get_root().add_child(macro)
 
-        # Save the map
-        self.map.save(map_name)
+        # Display the map
+        components.html(self.map._repr_html_(), width=max_content_width, height=500)
+
+    def save(self, filename):
+        """
+        Save the map to a file.
+
+        Parameters:
+        filename (str): Name of the file to save the map to.
+        """
+
+        self.map.save(filename)
 
 
-# main function to find location of the landmark which name is given in IMAGE_NAME
-# and highlight all possible locations on for given landmark
-# write confidences of each location on map for each highlighted location
+st.set_page_config(
+    page_title="Landmark Detection",
+    page_icon="📷",
+    layout="centered",
+    initial_sidebar_state="expanded",
+)
+
+
+from streamlit_js_eval import streamlit_js_eval
+
+screen_width = streamlit_js_eval(
+    js_expression="window.screen.width", key="screen_width"
+)
 
 
 def main():
-    css = """
-    <style>
-    body {
-        background-color: #30450f;  /* Dark Green */
-        /* blur */
-    }
-    .main {
-        /* Dark Green */
-        background-color: #66294d;
-        /* blur */
-        
-    }
-    </style>
     """
-    st.markdown(css, unsafe_allow_html=True)
-    # initialize GoogleCloudVision class
+    Main function of the app.
+    """
+
+    # Set the page title and favicon
+    st.title("Landmark Detection")
+    st.markdown(
+        """
+        <link rel="shortcut icon" href="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/google/274/camera_1f4f7.png" type="image/png">
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Display the app description
+    st.write(
+        """
+        This app uses Google Cloud Vision to detect landmarks in images. 
+        """
+    )
+
+    # Display the app instructions
+    st.markdown(
+        """
+        ### Instructions
+        - _**Click** on the **>** icon on the **top left corner** of the app to expand the sidebar._
+        - _**Upload** an image of a landmark using the upload **widget** on the sidebar._
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Display the app sidebar
+    st.sidebar.title("Upload an image of a landmark")
+    st.sidebar.write(
+        """Use the upload widget to upload an image of a landmark. 
+        The app will display the landmarks detected by Google Cloud Vision."""
+    )
+
+    # Initialize Google Cloud Vision and Folium Map
     gc = GoogleCloudVision()
-    # initialize FoliumMap class
     fm = FoliumMap()
 
-    uploaded_file = st.file_uploader("Choose an image...", type="jpg")
-    # change color of the button
+    # Create a file uploader for the user to upload an image
+    uploaded_file = st.sidebar.file_uploader(
+        "Choose an image of a landmark...", type="jpg"
+    )
 
-    try:
-        image_usr = Img.open(uploaded_file)
-        st.image(image_usr, caption="Uploaded Image.", use_column_width=True)
-    except:
-        st.write("waiting for image upload")
+    # If image is uploaded, display the image on sidebar but limit the image height to 300 pixels
     if uploaded_file is not None:
-        # find landmark from image
+        image = Img.open(uploaded_file)
+        st.sidebar.image(image, caption="Uploaded Image", use_column_width=True)
+    # If an image is uploaded, perform landmark detection and add markers to the map
+    if uploaded_file is not None:
         landmarks = gc.find_landmark(uploaded_file)
-        # find all possible locations of the landmark
         for landmark in landmarks:
-            # get landmark name
             landmark_name = landmark.description
-            # get confidence of landmark
             confidence = "Matched: " + str(round(landmark.score * 100, 2)) + "%"
-            # get latitude and longitude of landmark
             lat = landmark.locations[0].lat_lng.latitude
             lon = landmark.locations[0].lat_lng.longitude
-            # add marker on map for each location of landmark
             fm.add_marker(lat, lon, landmark_name, confidence)
-            # add heatmap on map for each location of landmark
             fm.add_heatmap(lat, lon)
-        # save map
-        fm.save_map("map.html")
-        # display map on streamlit
-        HtmlFile = open("map.html", "r", encoding="utf-8")
-        source_code = HtmlFile.read()
-        components.html(source_code, height=700, width=700)
 
-    else:
-        st.write("Please upload an image.")
+        # Convert the map to HTML
+        map_html = fm.map._repr_html_()
+
+        # Add a download button for the map. Upon clicking the button, open a new tab with the map in it
+        st.download_button(
+            label="Download Map",
+            data=map_html,
+            file_name=f"{landmark_name}_full_screen_map.html",
+            mime="text/html",
+            on_click=st.write(
+                f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
+                unsafe_allow_html=True,
+            ),
+        )
+
+        # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map
+        fm.map.fit_bounds(fm.map.get_bounds())
+
+        # Display a note about zooming out to see the whole map
+        st.write("""> ''You may want to zoom out a bit to see the whole map.'' """)
+
+        # Display the map
+        fm.display_map(max_content_width=screen_width)
+
+    # Display the app footer
+    st.write(
+        """
+        ### About
+        > This app was created by [Elshad Sabziyev](https://www.github.com/elshadsabziyev) using [Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision), and [Folium](https://python-visualization.github.io/folium/).
+        """
+    )
 
 
+# Check if the script is running directly (not being imported)
 if __name__ == "__main__":
+    # If so, run the main function
     main()
