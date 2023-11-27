@@ -74,7 +74,8 @@ class GoogleCloudVision(App):
         # The response is a list of detected landmarks
         response = self.client.landmark_detection(image=image)
         landmarks = response.landmark_annotations
-
+        with open("response.txt", "w") as f:
+            f.write(str(response))
         return landmarks
 
 
@@ -317,25 +318,47 @@ def main():
         map_html = fm.map._repr_html_()
 
         # Add a download button for the map. Upon clicking the button, open a new tab with the map in it
-        st.download_button(
-            label="Download Map",
-            data=map_html,
-            file_name=f"{landmark_name}_full_screen_map.html",
-            mime="text/html",
-            on_click=st.write(
-                f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
-                unsafe_allow_html=True,
-            ),
-        )
+        try:
+            st.download_button(
+                label="Download Map",
+                data=map_html,
+                file_name=f"{landmark_name}_full_screen_map.html",
+                mime="text/html",
+                on_click=st.write(
+                    f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
+                    unsafe_allow_html=True,
+                ),
+            )
+        except UnboundLocalError:
+            st.write(
+                """
+            > boop-beep-boop...
+            """
+            )
 
         # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map
         fm.map.fit_bounds(fm.map.get_bounds())
 
         # Display a note about zooming out to see the whole map
-        st.write("""> ''You may want to zoom out a bit to see the whole map.'' """)
+        if landmarks:
+            st.write("""> ''You may want to zoom out a bit to see the whole map.'' """)
+        else:
+            pass
 
-        # Display the map
-        fm.display_map(max_content_width=screen_width)
+        # Display the map if landmakrs are detected, if not display a message
+        if landmarks:
+            fm.display_map(max_content_width=screen_width)
+        else:
+            st.write(
+                """
+                # Landmark not detected. Please try another image.
+                ## Possible reasons:
+                - The landmark is not famous enough.
+                - The landmark is not visible in the image.
+                - The image is not clear enough.
+                - The image is not of a landmark.
+                """
+            )
 
     # Display the app footer
     st.write(

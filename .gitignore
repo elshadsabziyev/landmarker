@@ -157,3 +157,5 @@ cython_debug/
 #.idea/
 output_maps/output.html
 lobot-406018-71f34c6d3d6a.json
+test_app.py
+response.txt
