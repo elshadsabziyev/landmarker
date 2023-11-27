@@ -112,19 +112,35 @@ For local usage on Windows or other operating systems, follow similar steps prov
 - **Basic Functionality**:
   - Landmark detection and mapping features implemented.
   - Local deployment and usage instructions provided.
+  - Streamlit hosting guide provided.
+  - Auto-zoom, map download functionalities added.
+  - App redesigned to be more colorful.
 
 ### 🚀 Future Enhancements
 
 - **📡 Improved API Integration**:
   - Implement caching mechanisms for API requests to enhance performance.
   - Explore asynchronous processing for quicker responses.
+  - Integrate Wikipedia and Britannica APIs to provide additional information about recognized landmarks.
 
-- **🌐 Web Hosting**:
-  - Deploy the application on cloud platforms like AWS, GCP, or Heroku for public access.
-  - Enhance security measures for public deployment.
+- **🌐 Advanced Mapping Framework**:
+  - Explore advanced mapping frameworks or libraries for a more interactive and visually appealing mapping experience.
+  - Include support for more image file formats.
 
-- **📊 Enhanced Visualization**:
-  - Incorporate additional visualization tools for in-depth analysis of detected landmarks.
+- **🌍 Direct Camera Capture**:
+  - Enable direct photo capture capabilities from cameras and mobile devices for seamless image recognition.
+  - Implement real-time landmark detection for instant feedback on captured images.
+
+- **🤖 AI-Powered Landmark Identification**:
+  - Utilize AI models trained specifically for landmark identification to improve accuracy and reliability.
+  - Incorporate sophisticated algorithms for better handling of complex landscapes and diverse landmarks.
+
+- **🌐 Cloud-Based Mapping**:
+  - Integrate cloud-based mapping services for scalability and robustness in handling large volumes of mapping data.
+  - Implement collaborative mapping features to allow multiple users to contribute to landmark identification and mapping.
+
+- **🔒 Privacy and Security**:
+  - Strengthen data privacy measures for handling data.
 
 ## 👥 Project Team
 
