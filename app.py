@@ -296,9 +296,39 @@ def main():
     # Create a switch to toggle between satellite and normal mode
 
     # Create a file uploader for the user to upload an image
-    uploaded_file = st.sidebar.file_uploader(
-        "Choose an image of a landmark...", type=SUPPORTED_FORMATS
-    )
+    js_code_camera_access = """
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  // Request access to the camera
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(function(stream) {
+      // User granted access to the camera, you can do something with the stream if needed
+      console.log('Camera access granted');
+      // You might want to close the stream if you're not using it
+      // stream.getTracks().forEach(track => track.stop());
+    })
+    .catch(function(error) {
+      // User denied access to the camera or there was an error
+      console.error('Camera access denied:', error);
+    });
+} else {
+  // If getUserMedia is not supported
+  console.error('getUserMedia is not supported on this browser');
+}
+"""
+    camera = st.sidebar.toggle("Camera", False, help="Switch on the camera.")
+    if camera:
+        streamlit_js_eval(js_expression=js_code_camera_access, key="camera_access")
+        st.write("Camera is on")
+        uploaded_file = st.sidebar.camera_input(label="Point the camera at a landmark.")
+    else:
+        st.write("Camera is off")
+        uploaded_file = st.sidebar.file_uploader(
+            label="",
+            type=SUPPORTED_FORMATS,
+            accept_multiple_files=False,
+            help="Upload an image of a landmark.",
+        )
+
     # If image is uploaded, display the image on sidebar but limit the image height to 300 pixels
     if uploaded_file is not None:
         image = Img.open(uploaded_file)
@@ -341,7 +371,7 @@ def main():
         # Display a note about zooming out to see the whole map
         if landmarks:
             a = """>Zoom out to see the whole map, or just download it."""
-            
+
             b = """>Click on the markers to see the landmark name and similarity score."""
             st.write(a + "\n" + b)
             satellite_mode = st.toggle(
