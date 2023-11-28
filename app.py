@@ -17,6 +17,7 @@ ACCURACY_HEATMAP_RADIUS = 20
 DEFAULT_ZOOM_START = (
     2  # Does noting since we are using fit_bounds to fit the map to the markers
 )
+IS_CAMERA_ACCESS_ASKED = False
 
 
 # Define the main App class
@@ -317,7 +318,9 @@ def main():
 """
     camera = st.sidebar.toggle("Camera", False, help="Switch on the camera.")
     if camera:
-        streamlit_js_eval(js_expression=js_code_camera_access, key="camera_access")
+        if not IS_CAMERA_ACCESS_ASKED:
+            #streamlit_js_eval(js_expression=js_code_camera_access, key="camera_access")
+            IS_CAMERA_ACCESS_ASKED = True
         st.write("Camera is on")
         uploaded_file = st.sidebar.camera_input(label="Point the camera at a landmark.")
     else:
