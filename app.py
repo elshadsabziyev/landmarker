@@ -10,6 +10,14 @@ from PIL import Image as Img
 from google.oauth2 import service_account
 import base64
 
+# Define the supported image formats
+SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
+# Define the accuracy using heatmap marker radius
+ACCURACY_HEATMAP_RADIUS = 20
+DEFAULT_ZOOM_START = (
+    2  # Does noting since we are using fit_bounds to fit the map to the markers
+)
+
 
 # Define the main App class
 class App:
@@ -80,7 +88,7 @@ class GoogleCloudVision(App):
 
 
 class FoliumMap:
-    def __init__(self, zoom_start_=30):
+    def __init__(self, zoom_start_=DEFAULT_ZOOM_START):
         """
         Initialize the FoliumMap class.
 
@@ -202,7 +210,7 @@ class FoliumMap:
 
         # Add a heatmap to the map at the specified latitude and longitude
         folium.plugins.HeatMap(
-            [[lat, lon]], radius=20, blur=12, min_opacity=0.5
+            [[lat, lon]], radius=ACCURACY_HEATMAP_RADIUS, blur=12, min_opacity=0.5
         ).add_to(self.map)
 
     def display_map(self, max_content_width):
@@ -222,9 +230,17 @@ class FoliumMap:
         macro = MacroElement()
         macro._template = Template(template)
         self.map.get_root().add_child(macro)
-
         # Display the map
         components.html(self.map._repr_html_(), width=max_content_width, height=500)
+
+    def satalite_map(self):
+        folium.TileLayer(
+            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            attr="Esri",
+            name="Esri Satellite",
+            overlay=False,
+            control=True,
+        ).add_to(self.map)
 
     def save(self, filename):
         """
@@ -233,7 +249,7 @@ class FoliumMap:
         Parameters:
         filename (str): Name of the file to save the map to.
         """
-
+        folium.TileLayer(tiles="Mapbox Control Room").add_to(self.map)
         self.map.save(filename)
 
 
@@ -258,27 +274,10 @@ def main():
     """
 
     # Set the page title and favicon
-    st.title("Landmark Detection")
+    st.title("LANDMARK BOT 📌🗺️")
     st.markdown(
         """
         <link rel="shortcut icon" href="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/google/274/camera_1f4f7.png" type="image/png">
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Display the app description
-    st.write(
-        """
-        This app uses Google Cloud Vision to detect landmarks in images. 
-        """
-    )
-
-    # Display the app instructions
-    st.markdown(
-        """
-        ### Instructions
-        - _**Click** on the **>** icon on the **top left corner** of the app to expand the sidebar._
-        - _**Upload** an image of a landmark using the upload **widget** on the sidebar._
         """,
         unsafe_allow_html=True,
     )
@@ -294,15 +293,34 @@ def main():
     gc = GoogleCloudVision()
     fm = FoliumMap()
 
+    # Create a switch to toggle between satellite and normal mode
+
     # Create a file uploader for the user to upload an image
     uploaded_file = st.sidebar.file_uploader(
-        "Choose an image of a landmark...", type="jpg"
+        "Choose an image of a landmark...", type=SUPPORTED_FORMATS
     )
-
     # If image is uploaded, display the image on sidebar but limit the image height to 300 pixels
     if uploaded_file is not None:
         image = Img.open(uploaded_file)
         st.sidebar.image(image, caption="Uploaded Image", use_column_width=True)
+    else:
+        # Display the app description
+        st.write(
+            """
+            This app uses Google Cloud Vision to detect landmarks in images. 
+            """
+        )
+
+        # Display the app instructions
+        st.markdown(
+            """
+            ### Instructions
+            - _**Click** on the **>** icon on the **top left corner** of the app to expand the sidebar._
+            - _**Upload** an image of a landmark using the upload **widget** on the sidebar._
+            """,
+            unsafe_allow_html=True,
+        )
+
     # If an image is uploaded, perform landmark detection and add markers to the map
     if uploaded_file is not None:
         landmarks = gc.find_landmark(uploaded_file)
@@ -316,54 +334,68 @@ def main():
 
         # Convert the map to HTML
         map_html = fm.map._repr_html_()
+        # use js or css to make iframe smaller for map_html
 
-        # Add a download button for the map. Upon clicking the button, open a new tab with the map in it
-        try:
-            st.download_button(
-                label="Download Map",
-                data=map_html,
-                file_name=f"{landmark_name}_full_screen_map.html",
-                mime="text/html",
-                on_click=st.write(
-                    f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
-                    unsafe_allow_html=True,
-                ),
-            )
-        except UnboundLocalError:
-            st.write(
-                """
-            > boop-beep-boop...
-            """
-            )
-
-        # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map
-        fm.map.fit_bounds(fm.map.get_bounds())
-
+        # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map extend by 10%
+        fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40])
         # Display a note about zooming out to see the whole map
         if landmarks:
-            st.write("""> ''You may want to zoom out a bit to see the whole map.'' """)
+            a = """>Zoom out to see the whole map, or just download it."""
+            
+            b = """>Click on the markers to see the landmark name and similarity score."""
+            st.write(a + "\n" + b)
+            satellite_mode = st.toggle(
+                "Satellite Mode", False, help="Switch on the satellite mode."
+            )
+            # Choose the tileset based on the switch
+            apply_satellite = fm.satalite_map() if satellite_mode else None
+            # Add a download button for the map. Upon clicking the button, open a new tab with the map in it
+            try:
+                st.download_button(
+                    label="Download Map",
+                    data=map_html,
+                    file_name=f"{landmark_name}_full_screen_map.html",
+                    mime="text/html",
+                    on_click=st.write(
+                        f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
+                        unsafe_allow_html=True,
+                    ),
+                )
+            except UnboundLocalError:
+                st.write(
+                    """
+                > boop-beep-boop...
+                """
+                )
+
         else:
             pass
-
-        # Display the map if landmakrs are detected, if not display a message
+        # Display the map if landmarks are detected, if not display a message
         if landmarks:
             fm.display_map(max_content_width=screen_width)
+
         else:
             st.write(
                 """
-                # Landmark not detected. Please try another image.
+                # Oops! No landmarks detected.
                 ## Possible reasons:
-                - The landmark is not famous enough.
-                - The landmark is not visible in the image.
-                - The image is not clear enough.
                 - The image is not of a landmark.
+                - The landmark is not famous enough.
+                - The image is not clear enough.
                 """
             )
 
     # Display the app footer
     st.write(
         """
-        ### About
+        ###
+        ###
+        ###
+        ###
+        ###
+        ###
+        ###
+        #### About
         > This app was created by [Elshad Sabziyev](https://www.github.com/elshadsabziyev) using [Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision), and [Folium](https://python-visualization.github.io/folium/).
         """
     )
