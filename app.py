@@ -652,10 +652,8 @@ class Landmarker(GoogleCloudVision, FoliumMap):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("debug", type=bool, default=False, help="Enable debug mode")
-    args = parser.parse_args()
+    # Create an instance of the Landmarker class
+    landmarker = Landmarker(debug=False)
 
-    landmarker_app = Landmarker(debug=args.debug)
-    landmarker_app.main()
-# error handling for satalite map api request
+    # Run the app
+    landmarker.main()
