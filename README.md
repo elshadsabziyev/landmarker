@@ -1,4 +1,6 @@
-# 🌍 LoBot (Location Bot)
+# 🌍 LandMarker (Landmark Marker)
+- Landmark detection bot using Google Cloud Vision, Streamlit and Folium.
+
 
 ## 📋 Table of Contents
 
