@@ -6,7 +6,7 @@ __pycache__/
 # credentials
 gcp_credentials.json
 .streamlit/secrets.toml
-C:\Users\sabzi\OneDrive - Baku Higher Oil School\Dev\Python\LoBot\output_maps\output.html
+.\output_maps\output.html
 credentials.json
 # C extensions
 *.so
