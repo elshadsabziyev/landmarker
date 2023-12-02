@@ -1,5 +1,6 @@
 # Import necessary libraries
 import base64
+import os
 import pickle
 
 from streamlit_js_eval import streamlit_js_eval
@@ -17,6 +18,7 @@ import streamlit.components.v1 as components
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
 ACCURACY_HEATMAP_RADIUS = 20
 DEFAULT_ZOOM_START = 2
+DEFAULT_MOBILE_MAX_WIDTH = 500
 
 
 class Credentials:
@@ -42,20 +44,37 @@ class Credentials:
         Returns:
         credentials (service_account.Credentials): The credentials object.
         """
-        credentials_dict = {
-            "type": st.secrets["type"],
-            "project_id": st.secrets["project_id"],
-            "private_key_id": st.secrets["private_key_id"],
-            "private_key": st.secrets["private_key"],
-            "client_email": st.secrets["client_email"],
-            "client_id": st.secrets["client_id"],
-            "auth_uri": st.secrets["auth_uri"],
-            "token_uri": st.secrets["token_uri"],
-            "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": st.secrets["client_x509_cert_url"],
-        }
-
-        return service_account.Credentials.from_service_account_info(credentials_dict)
+        try:
+            credentials_dict = {
+                "type": st.secrets["type"],
+                "project_id": st.secrets["project_id"],
+                "private_key_id": st.secrets["private_key_id"],
+                "private_key": st.secrets["private_key"],
+                "client_email": st.secrets["client_email"],
+                "client_id": st.secrets["client_id"],
+                "auth_uri": st.secrets["auth_uri"],
+                "token_uri": st.secrets["token_uri"],
+                "auth_provider_x509_cert_url": st.secrets[
+                    "auth_provider_x509_cert_url"
+                ],
+                "client_x509_cert_url": st.secrets["client_x509_cert_url"],
+            }
+            return service_account.Credentials.from_service_account_info(
+                credentials_dict
+            )
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Invalid credentials.
+                - Error Code: 0x001
+                - There may be issues with Google Cloud Vision API.
+                - Another possible reason is that credentials you provided are invalid or expired.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
 
 class GoogleCloudVision(Credentials):
@@ -75,7 +94,21 @@ class GoogleCloudVision(Credentials):
 
         # Initialize a client for the Google Cloud Vision API
         # We authenticate with the API using the credentials object created in the parent class
-        self.client = vision.ImageAnnotatorClient(credentials=self.credentials)
+        try:
+            self.client = vision.ImageAnnotatorClient(credentials=self.credentials)
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Invalid credentials.
+                - Error Code: 0x002
+                - There may be issues with Google Cloud Vision API.
+                - Another possible reason is that credentials you provided are invalid or expired.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
     def find_landmark(self, image_data):
         """
@@ -105,9 +138,22 @@ class GoogleCloudVision(Credentials):
         Returns:
         image (vision.Image): The loaded image.
         """
-        image_data.seek(0)
-        image = vision.Image(content=image_data.read())
-        return image
+        try:
+            image_data.seek(0)
+            image = vision.Image(content=image_data.read())
+            return image
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Invalid image.
+                - Error Code: 0x003
+                - Please make sure you have uploaded a valid image.
+                - Please make sure the image is in one of the supported formats (png, jpg, jpeg, webp).
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
     def _detect_landmarks(self, image):
         """
@@ -119,12 +165,28 @@ class GoogleCloudVision(Credentials):
         Returns:
         landmarks (list): A list of detected landmarks.
         """
-        response = self.client.landmark_detection(image=image)
-        landmarks = response.landmark_annotations
-        return landmarks
+        try:
+            response = self.client.landmark_detection(image=image)
+            landmarks = response.landmark_annotations
+            return landmarks
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Landmark detection failed.
+                - Error Code: 0x004
+                - There may be issues with Google Cloud Vision API.
+                - Another possible reason is that credentials you provided are invalid or expired.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
 
-class MockGoogleCloudVision(Credentials):
+class MockGoogleCloudVision(
+    Credentials
+):  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE APP
     # Class definitions
     """
     The MockGoogleCloudVision class is a child class of the Credentials class.
@@ -192,7 +254,20 @@ class FoliumMap:
         self.zoom_start = zoom_start_
 
         self.map = self._create_initial_map()
-        self.geo_locator = Nominatim(user_agent="landmarker")
+        try:
+            self.geo_locator = Nominatim(user_agent="landmarker")
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Map could not be created.
+                - Error Code: 0x005
+                - There may be issues with Geolocataion Provider.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
         self.colormap = self._create_colormap()
 
     def _create_initial_map(self):
@@ -202,7 +277,21 @@ class FoliumMap:
         Returns:
         map (folium.Map): The created map.
         """
-        return folium.Map(location=self.max_score_location, zoom_start=self.zoom_start)
+        try:
+            return folium.Map(
+                location=self.max_score_location, zoom_start=self.zoom_start
+            )
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Map could not be created.
+                - Error Code: 0x006
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
     def _create_colormap(self):
         """
@@ -231,7 +320,21 @@ class FoliumMap:
         city (str): The city of the location.
         country (str): The country of the location.
         """
-        location = self.geo_locator.reverse(f"{lat}, {lon}")
+        try:
+            location = self.geo_locator.reverse(f"{lat}, {lon}")
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Location details could not be retrieved.
+                - Error Code: 0x007
+                - There may be issues with Geolocataion Provider.
+                - Also if you switching between satellite and normal mode too fast, this error may occur.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
         address = location.raw["address"]
 
         city_keys = ["city", "town", "village", "suburb"]
@@ -253,10 +356,23 @@ class FoliumMap:
         Returns:
         detail (str): The detail from the address.
         """
-        for key in keys:
-            if key in address:
-                return address[key]
-        return ""
+        try:
+            for key in keys:
+                if key in address:
+                    return address[key]
+            return ""
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Location details could not be retrieved.
+                - Error Code: 0x008
+                - There may be issues with Geolocataion Provider.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
     def add_marker(self, lat, lon, landmark_name, confidence):
         """
@@ -268,7 +384,19 @@ class FoliumMap:
         landmark_name (str): Name of the landmark.
         confidence (str): Confidence score of the landmark detection.
         """
-        confidence_score = float(confidence.split(": ")[1].strip("%")) / 100
+        try:
+            confidence_score = float(confidence.split(": ")[1].strip("%")) / 100
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Invalid confidence score.
+                - Error Code: 0x009
+                - It's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
         if confidence_score > self.max_score:
             self.max_score = confidence_score
@@ -387,15 +515,28 @@ class FoliumMap:
         Returns:
         satalite_map (folium.TileLayer): The satalite map layer.
         """
-        satalite_map = folium.TileLayer(
-            tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            attr="Esri",
-            name="Esri Satellite",
-            overlay=False,
-            control=True,
-        )
-        satalite_map.add_to(self.map)
-        return satalite_map
+        try:
+            satalite_map = folium.TileLayer(
+                tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                attr="Esri",
+                name="Esri Satellite",
+                overlay=False,
+                control=True,
+            )
+            satalite_map.add_to(self.map)
+            return satalite_map
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Satalite map could not be created.
+                - Error Code: 0x010
+                - There may be issues with Map Tile Provider.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
     def get_city_country(self, lat, lon):
         """
@@ -419,12 +560,24 @@ class FoliumMap:
         Parameters:
         max_content_width (int): The maximum width of the map.
         """
-        components.html(
-            self.map._repr_html_(),
-            height=600,
-            width=max_content_width,
-            scrolling=True,
-        )
+        try:
+            components.html(
+                self.map._repr_html_(),
+                height=600,
+                width=max_content_width,
+                scrolling=True,
+            )
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Map could not be displayed.
+                - Error Code: 0x011
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
 
 class Landmarker(FoliumMap):
@@ -442,9 +595,12 @@ class Landmarker(FoliumMap):
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
         self.set_page_config()
-        self.screen_width = streamlit_js_eval(
-            js_expression="window.screen.width", key="screen_width"
-        )
+        try:
+            self.screen_width = streamlit_js_eval(
+                js_expression="window.screen.width", key="screen_width"
+            )
+        except Exception as e:
+            self.screen_width = DEFAULT_MOBILE_MAX_WIDTH
 
     def init_google_cloud_vision(self):
         if self.debug:
@@ -469,6 +625,21 @@ class Landmarker(FoliumMap):
         """
 
         # Set the page title and favicon
+        if self.debug:
+            st.warning(
+                """
+                ## Warning: Debug mode is on.
+                - Debug mode is on. (See the sidebar)
+                """
+            )
+            st.sidebar.warning(
+                """
+                ### Warning: Debug mode is on.
+                - Debug mode is on.
+                - This mode is only for testing the app.
+                - Please do not use this mode unless you are testing the app.
+                """
+            )
         title = """
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap');
@@ -521,24 +692,57 @@ class Landmarker(FoliumMap):
         gc = self.gc
         fm = self.fm
         # Create a switch to toggle between satellite and normal mode
-        camera = st.sidebar.toggle("Camera", False, help="Switch on the camera.")
+        camera = st.sidebar.toggle(
+            label="Camera", value=False, help="Switch on the camera."
+        )
         if camera:
             st.write(" - Privacy Notice: Camera is on")
-            uploaded_file = st.sidebar.camera_input(
-                label="Point the camera at a landmark."
-            )
+            try:
+                uploaded_file = st.sidebar.camera_input(
+                    label="Point the camera at a landmark",
+                )
+            except Exception as e:
+                st.warning(
+                    f"""
+                    Error: {e}
+                    ### Error: Camera could not be turned on.
+                    - Error Code: 0x012
+                    - There may be issues with your camera.
+                    - Try enabling the camera in your browser/OS settings.
+                    - You can manually upload an image of a landmark.
+                    - If the problem persists, it's not your fault, probably.
+                    - Please try again. If the problem persists, please contact the developer.
+                    """
+                )
         else:
-            uploaded_file = st.sidebar.file_uploader(
-                label="",
-                type=SUPPORTED_FORMATS,
-                accept_multiple_files=False,
-                help="Upload an image of a landmark.",
-            )
+            try:
+                uploaded_file = st.sidebar.file_uploader(
+                    label="Upload an image",
+                    type=SUPPORTED_FORMATS,
+                    accept_multiple_files=False,
+                    help="Upload an image of a landmark.",
+                )
+            except Exception as e:
+                st.warning(
+                    f"""
+                    Error: {e}
+                    ### Error: Image could not be uploaded.
+                    - Error Code: 0x013
+                    - There may be issues with your image.
+                    - Please make sure you have uploaded a valid image.
+                    - Please make sure the image is in one of the supported formats (png, jpg, jpeg, webp).
+                    - Please try again. If the problem persists, please contact the developer.
+                    """
+                )
 
         # If image is uploaded, display the image on sidebar but limit the image height to 300 pixels
         if uploaded_file is not None:
             image = Img.open(uploaded_file)
-            st.sidebar.image(image, caption="Uploaded Image", use_column_width=True)
+            st.sidebar.image(
+                image,
+                caption="Uploaded Image",
+                use_column_width=True,
+            )
         else:
             # Display the app description
             st.write(
@@ -578,11 +782,36 @@ class Landmarker(FoliumMap):
                     lon_most_matched = lon
 
             # Convert the map to HTML
-            map_html = fm.map._repr_html_()
+            try:
+                map_html = fm.map._repr_html_()
+            except Exception as e:
+                st.error(
+                    f"""
+                    Error: {e}
+                    ### Error: Map could not loaded.
+                    - Error Code: 0x014
+                    - Most likely, it's not your fault.
+                    - Please try again. If the problem persists, please contact the developer.
+                    """
+                )
+                st.stop()
             # use js or css to make iframe smaller for map_html
 
             # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map extend by 10%
-            fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40])
+            try:
+                fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40])
+            except Exception as e:
+                st.warning(
+                    f"""
+                    Error: {e}
+                    ### Error: Map could not be adjusted.
+                    - Error Code: 0x015
+                    - Most likely, it's not your fault.
+                    - Please try again, or zoom out a bit to see the whole map.
+                    - You can also rerun the app to see if the problem persists.
+                    - If the problem persists, please contact the developer.
+                    """
+                )
             # Display a note about zooming out to see the whole map
             if landmarks:
                 a = """ - **Zoom out to see the whole map, or just download it.**"""
@@ -596,12 +825,14 @@ class Landmarker(FoliumMap):
 
                 # Add a download button for the map. Upon clicking the button, open a new tab with the map in it
                 satellite_mode = st.toggle(
-                    "Satellite Map", False, help="Switch on the satellite mode."
+                    "Satellite Map",
+                    False,
+                    help="Switch on the satellite mode.",
                 )
                 # Choose the tileset based on the switch
                 _ = fm.satalite_map() if satellite_mode else None
                 help_text = (
-                    """Satalite map is not available for download. Please switch to normal map to download."""
+                    """Satalite map is not available for download. What you are going to download is the normal map."""
                     if satellite_mode
                     else """Download the map to see the whole map."""
                 )
@@ -684,8 +915,21 @@ class Landmarker(FoliumMap):
 
 
 if __name__ == "__main__":
-    # Create an instance of the Landmarker class
-    landmarker = Landmarker(debug=False)
-
-    # Run the app
-    landmarker.main()
+    try:
+        debug_mode = True if st.secrets["debug_mode"] == "True" else False
+    except Exception as e:
+        debug_mode = False
+    landmarker = Landmarker(debug=debug_mode)
+    try:
+        landmarker.main()
+    except Exception as e:
+        st.error(
+            f"""
+            Error: {e}
+            ### Error: App could not be loaded.
+            - Error Code: 0x016
+            - Most likely, it's not your fault.
+            - Please try again. If the problem persists, please contact the developer.
+            """
+        )
+        st.stop()
