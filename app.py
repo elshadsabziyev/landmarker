@@ -1,6 +1,5 @@
 # Import necessary libraries
 import base64
-import os
 import pickle
 
 from streamlit_js_eval import streamlit_js_eval
