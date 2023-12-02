@@ -17,13 +17,18 @@ import streamlit.components.v1 as components
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
 ACCURACY_HEATMAP_RADIUS = 20
 DEFAULT_ZOOM_START = 2
-IS_CAMERA_ACCESS_ASKED = False
 
 
-class App:
+class Credentials:
+    # Class definitions
+    """
+    The Credentials class is the parent class of the GoogleCloudVision and MockGoogleCloudVision classes.
+    It gets the credentials from Streamlit secrets and creates a credentials object.
+    """
+
     def __init__(self):
         """
-        Initialize the App class.
+        Initialize the Credentials class.
         """
         # Create a credentials dictionary using Streamlit secrets
         # These secrets are used to authenticate with the Google Cloud Vision API
@@ -53,11 +58,18 @@ class App:
         return service_account.Credentials.from_service_account_info(credentials_dict)
 
 
-class GoogleCloudVision(App):
+class GoogleCloudVision(Credentials):
+    # Class definitions
+    """
+    The GoogleCloudVision class is a child class of the Credentials class.
+    It uses the credentials object to authenticate with the Google Cloud Vision API.
+    It also uses the client object to perform landmark detection on an image.
+    """
+
     def __init__(self):
         """
         Initialize the GoogleCloudVision class.
-        This class is a child of the App class, so we call the constructor of the parent class.
+        This class is a child of the Credentials class, so we call the constructor of the parent class.
         """
         super().__init__()
 
@@ -112,11 +124,22 @@ class GoogleCloudVision(App):
         return landmarks
 
 
-class MockGoogleCloudVision(App):
+class MockGoogleCloudVision(Credentials):
+    # Class definitions
+    """
+    The MockGoogleCloudVision class is a child class of the Credentials class.
+    Unlike the GoogleCloudVision class, it does not use the credentials object to authenticate with the Google Cloud Vision API.
+    So, it can be used to test the app without having to authenticate with the API.
+    Default response is loaded from a pickle file (response.pkl)
+    This response is a mock response that is created using the Google Cloud Vision API.
+    It contains the the response for an image of (Maiden Tower, Baku, Azerbaijan)
+    It uses a mock response to simulate the detection of landmarks in an image.
+    """
+
     def __init__(self):
         """
         Initialize the MockGoogleCloudVision class.
-        This class is a child of the App class, so we call the constructor of the parent class.
+        This class is a child of the Credentials class, so we call the constructor of the parent class.
         """
         super().__init__()
 
@@ -150,6 +173,13 @@ class MockGoogleCloudVision(App):
 
 
 class FoliumMap:
+    # Class definitions
+    """
+    The FoliumMap class is used to create a Folium map.
+    It uses the Folium library to create the map.
+    It also uses the Nominatim library to get the city and country of a location using its latitude and longitude.
+    """
+
     def __init__(self, zoom_start_=DEFAULT_ZOOM_START):
         """
         Initialize the FoliumMap class.
@@ -397,7 +427,15 @@ class FoliumMap:
         )
 
 
-class Landmarker(GoogleCloudVision, FoliumMap):
+class Landmarker(FoliumMap):
+    # Class definitions
+    """
+    The Landmarker class is a child class of the GoogleCloudVision and FoliumMap classes.
+    It is the main class of the Credentials.
+    It uses the GoogleCloudVision class to perform landmark detection on an image.
+    It uses the FoliumMap class to create a Folium map and add markers to the map.
+    """
+
     def __init__(self, debug=False):
         super().__init__()
         self.debug = debug
@@ -480,12 +518,8 @@ class Landmarker(GoogleCloudVision, FoliumMap):
         )
 
         # Initialize Google Cloud Vision and Folium Map
-        if self.debug:
-            gc = MockGoogleCloudVision()
-        else:
-            gc = GoogleCloudVision()
-        fm = FoliumMap()
-
+        gc = self.gc
+        fm = self.fm
         # Create a switch to toggle between satellite and normal mode
         camera = st.sidebar.toggle("Camera", False, help="Switch on the camera.")
         if camera:
