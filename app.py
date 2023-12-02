@@ -1,5 +1,4 @@
 # Import necessary libraries
-import argparse
 import base64
 import pickle
 
@@ -11,7 +10,6 @@ from geopy.geocoders import Nominatim
 import folium
 from folium import plugins
 import branca.colormap as cm
-from branca.element import Template, MacroElement
 import streamlit as st
 import streamlit.components.v1 as components
 
