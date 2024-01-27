@@ -19,6 +19,8 @@ ACCURACY_HEATMAP_RADIUS = 20
 DEFAULT_ZOOM_START = 2
 DEFAULT_MOBILE_MAX_WIDTH = 500
 
+DEBUG_MODE_WARNING_ENABLED = False
+
 
 class Credentials:
     # Class definitions
@@ -183,9 +185,7 @@ class GoogleCloudVision(Credentials):
             st.stop()
 
 
-class MockGoogleCloudVision(
-    Credentials
-):  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE APP
+class MockGoogleCloudVision:  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE APP
     # Class definitions
     """
     The MockGoogleCloudVision class is a child class of the Credentials class.
@@ -202,7 +202,7 @@ class MockGoogleCloudVision(
         Initialize the MockGoogleCloudVision class.
         This class is a child of the Credentials class, so we call the constructor of the parent class.
         """
-        super().__init__()
+        pass
 
     def find_landmark(self, image_data):
         """
@@ -624,7 +624,7 @@ class Landmarker(FoliumMap):
         """
 
         # Set the page title and favicon
-        if self.debug:
+        if self.debug and DEBUG_MODE_WARNING_ENABLED:
             st.warning(
                 """
                 ## Warning: Debug mode is on.
@@ -891,7 +891,6 @@ class Landmarker(FoliumMap):
                         # Unknown Location
                         """
                     )
-
                 fm.display_map(max_content_width=self.screen_width)
 
             else:
