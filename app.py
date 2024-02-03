@@ -1,5 +1,6 @@
 # Import necessary libraries
 import base64
+import os
 import pickle
 
 from streamlit_js_eval import streamlit_js_eval
@@ -12,7 +13,7 @@ from folium import plugins
 import branca.colormap as cm
 import streamlit as st
 import streamlit.components.v1 as components
-from openai import OpenAI, api_key
+from openai import OpenAI
 
 # Constants
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
@@ -254,7 +255,8 @@ class OpenAI(Credentials):
         # Initialize a client for the OpenAI API
         # We authenticate with the API using the credentials object created in the parent class
         try:
-            api_key = self.openai_key
+            # set the API key as an environment variable
+            os.environ["OPENAI_API_KEY"] = self.openai_key
             self.client = OpenAI()
         except Exception as e:
             st.error(
