@@ -38,7 +38,7 @@ class Credentials:
         # These secrets are used to authenticate with the Google Cloud Vision API
         self.credentials, self.openai_key = self.get_credentials_from_secrets()
 
-    def get_credentials_from_secrets(self):
+    def     get_credentials_from_secrets(self):
         """
         Extracts the credentials from Streamlit secrets and creates a credentials object.
         This object will be used to authenticate with the Google Cloud Vision API.
@@ -63,8 +63,8 @@ class Credentials:
             }
             openai_key = st.secrets["openai_api_key"]
             return service_account.Credentials.from_service_account_info(
-                credentials_dict, openai_key
-            )
+                credentials_dict
+            ), openai_key
         except Exception as e:
             st.error(
                 f"""
