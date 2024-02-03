@@ -237,7 +237,7 @@ class MockGoogleCloudVision:  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE
         return response
 
 
-class OpenAI(Credentials):
+class OpenAIClient(Credentials):
     # Class definitions
     """
     The OpenAI class is a child class of the Credentials class.
@@ -272,37 +272,17 @@ class OpenAI(Credentials):
             )
             st.stop()
 
-    def generate_summary(self, text):
-        """
-        Generate a summary of a text using the OpenAI API.
-
-        Parameters:
-        text (str): The text to summarize.
-
-        Returns:
-        summary (str): The generated summary.
-        """
-        try:
-            response = self.client.Completion.create(
-                engine="gpt-3.5-turbo",
-                prompt=text,
-                max_tokens=100,
-                stop=["###"],
-            )
-            summary = response.choices[0].text.strip()
-            return summary
-        except Exception as e:
-            st.error(
-                f"""
-                Error: {e}
-                ### Error: Summary could not be generated.
-                - Error Code: 0x019
-                - There may be issues with OpenAI API.
-                - Most likely, it's not your fault.
-                - Please try again. If the problem persists, please contact the developer.
-                """
-            )
-            st.stop()
+    def generate_summary(self):
+        text = """Say something about the landmark."""
+        answer = self.client.Completion.create(
+            engine = "gpt-3.5-turbo",
+            prompt=text,
+            max_tokens=100,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        )
+        st.write(answer.choices[0].text)
 
 
 class FoliumMap:
@@ -969,13 +949,8 @@ class Landmarker(FoliumMap):
                         ##### LLM Based Summary:
                         """
                     )
-                    summary = OpenAI().generate_summary(
-                        f"""
-                        # {landmark_most_matched}
-                        ## {city}, {country}
-                        """
-                    )
-                    st.write(summary)
+                    GPT = OpenAIClient()
+                    GPT.generate_summary()            
 
                 except Exception as e:
                     st.error(
