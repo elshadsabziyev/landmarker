@@ -12,7 +12,7 @@ from folium import plugins
 import branca.colormap as cm
 import streamlit as st
 import streamlit.components.v1 as components
-from openai import OpenAI
+from openai import OpenAI, api_key
 
 # Constants
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
@@ -38,7 +38,7 @@ class Credentials:
         # These secrets are used to authenticate with the Google Cloud Vision API
         self.credentials, self.openai_key = self.get_credentials_from_secrets()
 
-    def     get_credentials_from_secrets(self):
+    def get_credentials_from_secrets(self):
         """
         Extracts the credentials from Streamlit secrets and creates a credentials object.
         This object will be used to authenticate with the Google Cloud Vision API.
@@ -62,9 +62,10 @@ class Credentials:
                 "client_x509_cert_url": st.secrets["client_x509_cert_url"],
             }
             openai_key = st.secrets["openai_api_key"]
-            return service_account.Credentials.from_service_account_info(
-                credentials_dict
-            ), openai_key
+            return (
+                service_account.Credentials.from_service_account_info(credentials_dict),
+                openai_key,
+            )
         except Exception as e:
             st.error(
                 f"""
@@ -253,7 +254,7 @@ class OpenAI(Credentials):
         # Initialize a client for the OpenAI API
         # We authenticate with the API using the credentials object created in the parent class
         try:
-            self.client = OpenAI(self.openai_key)
+            self.client = OpenAI(api_key = self.openai_key)
         except Exception as e:
             st.error(
                 f"""
