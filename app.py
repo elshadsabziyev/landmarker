@@ -254,7 +254,8 @@ class OpenAI(Credentials):
         # Initialize a client for the OpenAI API
         # We authenticate with the API using the credentials object created in the parent class
         try:
-            self.client = OpenAI(api_key = self.openai_key)
+            api_key = self.openai_key
+            self.client = OpenAI()
         except Exception as e:
             st.error(
                 f"""
