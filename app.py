@@ -12,7 +12,8 @@ from folium import plugins
 import branca.colormap as cm
 import streamlit as st
 import streamlit.components.v1 as components
-from bardapi import BardCookies
+from openai import OpenAI
+
 # Constants
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
 ACCURACY_HEATMAP_RADIUS = 20
@@ -35,7 +36,7 @@ class Credentials:
         """
         # Create a credentials dictionary using Streamlit secrets
         # These secrets are used to authenticate with the Google Cloud Vision API
-        self.credentials = self.get_credentials_from_secrets()
+        self.credentials, self.openai_key = self.get_credentials_from_secrets()
 
     def get_credentials_from_secrets(self):
         """
@@ -60,8 +61,9 @@ class Credentials:
                 ],
                 "client_x509_cert_url": st.secrets["client_x509_cert_url"],
             }
+            openai_key = st.secrets["openai_api_key"]
             return service_account.Credentials.from_service_account_info(
-                credentials_dict
+                credentials_dict, openai_key
             )
         except Exception as e:
             st.error(
@@ -69,7 +71,7 @@ class Credentials:
                 Error: {e}
                 ### Error: Invalid credentials.
                 - Error Code: 0x001
-                - There may be issues with Google Cloud Vision API.
+                - There may be issues with Google Cloud Vision API or OpenAI API.
                 - Another possible reason is that credentials you provided are invalid or expired.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
@@ -77,49 +79,6 @@ class Credentials:
             )
             st.stop()
 
-class BardCredentials:
-    # Class definitions
-    """
-    The BardCredentials class is the parent class of the BardCookies class.
-    It gets the credentials from Streamlit secrets and creates a credentials object.
-    """
-
-    def __init__(self):
-        """
-        Initialize the Credentials class.
-        """
-        # Create a credentials dictionary using Streamlit secrets
-        # These secrets are used to authenticate with the Google Cloud Vision API
-        self.credentials = self.get_credentials_from_secrets()
-
-    def get_credentials_from_secrets(self):
-        """
-        Extracts the credentials from Streamlit secrets and creates a credentials object.
-        This object will be used to authenticate with the Google Cloud Vision API.
-
-        Returns:
-        credentials (service_account.Credentials): The credentials object.
-        """
-        try:
-            cookie_dict = {
-    "__Secure-1PSID": st.secrets["1PSID"],
-    "__Secure-1PSIDTS": st.secrets["1PSIDTS"],
-    "__Secure-1PSIDCC": st.secrets["1PSIDCC"],
-    }
-        except Exception as e:
-            st.error(
-                f"""
-                Error: {e}
-                ### Error: Invalid credentials.
-                - Error Code: 0x001-2
-                - There may be issues with Bard API.
-                - Another possible reason is that credentials you provided are invalid or expired.
-                - Most likely, it's not your fault.
-                - Please try again. If the problem persists, please contact the developer.
-                """
-            )
-            st.stop()
-        return cookie_dict
 
 class GoogleCloudVision(Credentials):
     # Class definitions
@@ -274,6 +233,72 @@ class MockGoogleCloudVision:  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE
         with open("response.pkl", "rb") as f:
             response = pickle.load(f)
         return response
+
+
+class OpenAI(Credentials):
+    # Class definitions
+    """
+    The OpenAI class is a child class of the Credentials class.
+    It uses the credentials object to authenticate with the OpenAI API.
+    It also uses the client object to perform landmark detection on an image.
+    """
+
+    def __init__(self):
+        """
+        Initialize the OpenAI class.
+        This class is a child of the Credentials class, so we call the constructor of the parent class.
+        """
+        super().__init__()
+
+        # Initialize a client for the OpenAI API
+        # We authenticate with the API using the credentials object created in the parent class
+        try:
+            self.client = OpenAI(self.openai_key)
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Invalid credentials.
+                - Error Code: 0x018
+                - There may be issues with OpenAI API.
+                - Another possible reason is that credentials you provided are invalid or expired.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
+
+    def generate_summary(self, text):
+        """
+        Generate a summary of a text using the OpenAI API.
+
+        Parameters:
+        text (str): The text to summarize.
+
+        Returns:
+        summary (str): The generated summary.
+        """
+        try:
+            response = self.client.Completion.create(
+                engine="gpt-3.5-turbo",
+                prompt=text,
+                max_tokens=100,
+                stop=["###"],
+            )
+            summary = response.choices[0].text.strip()
+            return summary
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Summary could not be generated.
+                - Error Code: 0x019
+                - There may be issues with OpenAI API.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
 
 class FoliumMap:
@@ -934,18 +959,20 @@ class Landmarker(FoliumMap):
                         # Unknown Location
                         """
                     )
-                bard = BardCookies(cookie_dict=BardCredentials().credentials)
                 try:
                     st.write(
                         """
                         ##### LLM Based Summary:
                         """
                     )
-                    answer = bard.get_answer(f"""Short info about {landmark_most_matched} situated in {city}, {country}.
-                                      Max 80 word and 3-4 sentences
-                                    Dont include any image just plain text response. Summary should be consice and straight to the point
-                                      Use academic style""")['content']
-                    st.write(answer)
+                    summary = OpenAI().generate_summary(
+                        f"""
+                        # {landmark_most_matched}
+                        ## {city}, {country}
+                        """
+                    )
+                    st.write(summary)
+
                 except Exception as e:
                     st.error(
                         f"""
