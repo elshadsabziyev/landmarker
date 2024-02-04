@@ -59,6 +59,10 @@ class Credentials:
                 ],
                 "client_x509_cert_url": st.secrets["client_x509_cert_url"],
             }
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_dict
+            )
+            return credentials
         except Exception as e:
             st.error(
                 f"""
