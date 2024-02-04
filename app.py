@@ -1,9 +1,6 @@
 # Import necessary libraries
 import base64
-import os
 import pickle
-
-from streamlit_js_eval import streamlit_js_eval
 from PIL import Image as Img
 from google.cloud import vision
 from google.oauth2 import service_account
@@ -13,14 +10,14 @@ from folium import plugins
 import branca.colormap as cm
 import streamlit as st
 import streamlit.components.v1 as components
-from openai import OpenAI
+import openai
+from streamlit_js_eval import streamlit_js_eval
 
 # Constants
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
 ACCURACY_HEATMAP_RADIUS = 20
 DEFAULT_ZOOM_START = 2
 DEFAULT_MOBILE_MAX_WIDTH = 500
-
 DEBUG_MODE_WARNING_ENABLED = False
 
 
@@ -62,11 +59,6 @@ class Credentials:
                 ],
                 "client_x509_cert_url": st.secrets["client_x509_cert_url"],
             }
-            openai_key = st.secrets["openai_api_key"]
-            return (
-                service_account.Credentials.from_service_account_info(credentials_dict),
-                openai_key,
-            )
         except Exception as e:
             st.error(
                 f"""
@@ -235,54 +227,6 @@ class MockGoogleCloudVision:  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE
         with open("response.pkl", "rb") as f:
             response = pickle.load(f)
         return response
-
-
-class OpenAIClient(Credentials):
-    # Class definitions
-    """
-    The OpenAI class is a child class of the Credentials class.
-    It uses the credentials object to authenticate with the OpenAI API.
-    It also uses the client object to perform landmark detection on an image.
-    """
-
-    def __init__(self):
-        """
-        Initialize the OpenAI class.
-        This class is a child of the Credentials class, so we call the constructor of the parent class.
-        """
-        super().__init__()
-
-        # Initialize a client for the OpenAI API
-        # We authenticate with the API using the credentials object created in the parent class
-        try:
-            # set the API key as an environment variable
-            os.environ["OPENAI_API_KEY"] = self.openai_key
-            self.client = OpenAI()
-        except Exception as e:
-            st.error(
-                f"""
-                Error: {e}
-                ### Error: Invalid credentials.
-                - Error Code: 0x018
-                - There may be issues with OpenAI API.
-                - Another possible reason is that credentials you provided are invalid or expired.
-                - Most likely, it's not your fault.
-                - Please try again. If the problem persists, please contact the developer.
-                """
-            )
-            st.stop()
-
-    def generate_summary(self):
-        text = """Say something about the landmark."""
-        answer = self.client.Completion.create(
-            engine = "gpt-3.5-turbo",
-            prompt=text,
-            max_tokens=100,
-            n=1,
-            stop=None,
-            temperature=0.5,
-        )
-        st.write(answer.choices[0].text)
 
 
 class FoliumMap:
@@ -604,20 +548,22 @@ class FoliumMap:
         city, country = self.get_location_details(lat, lon)
         return city, country
 
-    def display_map(self, max_content_width):
+    def display_map(self, max_content_width, max_content_height):
         """
         Display the map on Streamlit.
 
         Parameters:
         max_content_width (int): The maximum width of the map.
         """
+        aspect_ratio = max_content_width / max_content_height
+
         try:
             components.html(
                 self.map._repr_html_(),
-                height=600,
                 width=max_content_width,
-                scrolling=True,
+                height=max_content_width * 0.6,
             )
+
         except Exception as e:
             st.error(
                 f"""
@@ -646,12 +592,27 @@ class Landmarker(FoliumMap):
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
         self.set_page_config()
+        self.screen_width = 0
+        self.screen_height = 0
         try:
-            self.screen_width = streamlit_js_eval(
-                js_expression="window.screen.width", key="screen_width"
-            )
+            with st.empty():
+                _screen_res = streamlit_js_eval(
+                    js_expressions="""
+            function getScreenResolution() {
+                return  window.innerWidth + "x" + window.screen.height;
+            }
+            getScreenResolution();
+            """,
+                    want_output=True,
+                    key="SCR_W",
+                )
+
+                if _screen_res.split("x")[0] and _screen_res.split("x")[1]:
+                    self.screen_width = int(_screen_res.split("x")[0])
+                    self.screen_height = int(_screen_res.split("x")[1])
+                st.empty()
         except Exception as e:
-            self.screen_width = DEFAULT_MOBILE_MAX_WIDTH
+            pass
 
     def init_google_cloud_vision(self):
         if self.debug:
@@ -949,21 +910,34 @@ class Landmarker(FoliumMap):
                         ##### LLM Based Summary:
                         """
                     )
-                    GPT = OpenAIClient()
-                    GPT.generate_summary()            
+                    with st.spinner("Generating LLM Based Summary..."):
+                        prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
+                        openai.api_key = st.secrets["openai_api_key"]
+                        summary = openai.chat.completions.create(
+                            model="gpt-3.5-turbo-0125",
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=0.3,
+                            max_tokens=110,
+                        )
+                        response = summary.choices[0].message.content
+                        st.write(
+                            f"""
+                            > **{response}**
+                            """
+                        )   
 
                 except Exception as e:
                     st.error(
                         f"""
                         Error: {e}
-                        ### Error: Bard API could not be loaded.
+                        ### Error: LLM Based Summary could not be generated.
                         - Error Code: 0x017
                         - Most likely, it's not your fault.
                         - Please try again. If the problem persists, please contact the developer.
                         """
                     )
                     st.stop()
-                fm.display_map(max_content_width=self.screen_width)
+                fm.display_map(self.screen_width, self.screen_height)
 
             else:
                 st.write(
