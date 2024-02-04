@@ -34,7 +34,7 @@ class Credentials:
         """
         # Create a credentials dictionary using Streamlit secrets
         # These secrets are used to authenticate with the Google Cloud Vision API
-        self.credentials, self.openai_key = self.get_credentials_from_secrets()
+        self.credentials = self.get_credentials_from_secrets()
 
     def get_credentials_from_secrets(self):
         """
@@ -924,7 +924,7 @@ class Landmarker(FoliumMap):
                             f"""
                             > **{response}**
                             """
-                        )   
+                        )
 
                 except Exception as e:
                     st.error(
