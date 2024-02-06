@@ -34,7 +34,8 @@ class Credentials:
         """
         # Create a credentials dictionary using Streamlit secrets
         # These secrets are used to authenticate with the Google Cloud Vision API
-        self.credentials = self.get_credentials_from_secrets()
+        self.GCP_credentials = self.get_credentials_from_secrets()
+        self.OpenAI_credentials = st.secrets["openai_api_key"]
 
     def get_credentials_from_secrets(self):
         """
@@ -96,7 +97,7 @@ class GoogleCloudVision(Credentials):
         # Initialize a client for the Google Cloud Vision API
         # We authenticate with the API using the credentials object created in the parent class
         try:
-            self.client = vision.ImageAnnotatorClient(credentials=self.credentials)
+            self.client = vision.ImageAnnotatorClient(credentials=self.GCP_credentials)
         except Exception as e:
             st.error(
                 f"""
@@ -231,6 +232,55 @@ class MockGoogleCloudVision:  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE
         with open("response.pkl", "rb") as f:
             response = pickle.load(f)
         return response
+
+
+class LLM_Summary(Credentials):
+    # Class definitions
+    """
+    The LLM_Summary class is a child class of the Credentials class.
+    It uses the credentials object to authenticate with the OpenAI API.
+    It uses the OpenAI API to generate a summary about the landmark detected.
+    """
+
+    def __init__(self):
+        """
+        Initialize the LLM_Summary class.
+        This class is a child of the Credentials class, so we call the constructor of the parent class.
+        """
+        super().__init__()
+
+    def generate_summary(self, prompt):
+        """
+        Generate a summary about the landmark detected using the OpenAI API.
+
+        Parameters:
+        prompt (str): The prompt to generate the summary.
+
+        Returns:
+        summary (str): The generated summary.
+        """
+        try:
+            openai.api_key = self.OpenAI_credentials
+            summary = openai.chat.completions.create(
+                model="gpt-3.5-turbo-0125",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=110,
+            )
+            response = summary.choices[0].message.content
+            return response
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: LLM Based Summary could not be generated.
+                - Error Code: 0x018
+                - There may be issues with OpenAI API.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
 
 
 class FoliumMap:
@@ -916,17 +966,11 @@ class Landmarker(FoliumMap):
                     )
                     with st.spinner("Generating LLM Based Summary..."):
                         prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
-                        openai.api_key = st.secrets["openai_api_key"]
-                        summary = openai.chat.completions.create(
-                            model="gpt-3.5-turbo-0125",
-                            messages=[{"role": "user", "content": prompt}],
-                            temperature=0.3,
-                            max_tokens=110,
-                        )
-                        response = summary.choices[0].message.content
+                        summarizer = LLM_Summary()
+                        summary = summarizer.generate_summary(prompt)
                         st.write(
                             f"""
-                            > **{response}**
+                            > **{summary}**
                             """
                         )
 
