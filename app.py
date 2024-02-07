@@ -234,7 +234,7 @@ class MockGoogleCloudVision:  # DO NOT USE THIS CLASS UNLESS YOU ARE TESTING THE
         return response
 
 
-class LLM_Summary(Credentials):
+class OpenAI_LLM(Credentials):
     # Class definitions
     """
     The LLM_Summary class is a child class of the Credentials class.
@@ -281,6 +281,85 @@ class LLM_Summary(Credentials):
                 """
             )
             st.stop()
+
+    def stream_summary(self, prompt):
+        """
+        Generate a summary about the landmark detected using the OpenAI API.
+        Unlike the generate_summary method, this method is used to stream the summary to the app.
+
+        Parameters:
+        prompt (str): The prompt to generate the summary.
+
+        Returns:
+        summary (OpenAI Stream): The generated summary.
+        """
+        try:
+            openai.api_key = self.OpenAI_credentials
+            summary = openai.chat.completions.create(
+                model="gpt-3.5-turbo-0125",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=110,
+                stream=True,
+            )
+            yield summary
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: LLM Based Summary could not be generated.
+                - Error Code: 0x018
+                - There may be issues with OpenAI API.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
+
+
+class MockOpenAI_LLM:
+    # Class definitions
+    """
+    The MockOpenAI_LLM class is a child class of the Credentials class.
+    Unlike the OpenAI_LLM class, it does not use the credentials object to authenticate with the OpenAI API.
+    So, it can be used to test the app without having to authenticate with the API.
+    It uses a mock response to simulate the generation of a summary about the landmark detected.
+    """
+
+    def __init__(self):
+        """
+        Initialize the MockOpenAI_LLM class.
+        This class is a child of the Credentials class, so we call the constructor of the parent class.
+        """
+        pass
+
+    def generate_summary(self, prompt):
+        """
+        Mock method to simulate the generation of a summary about the landmark detected.
+
+        Parameters:
+        prompt (str): The prompt to generate the summary.
+
+        Returns:
+        summary (str): The generated summary.
+        """
+        # Load the mock response from a pickle file
+        response = self._load_mock_response()
+
+        # Extract the summary from the mock response
+        summary = response
+        return summary
+
+    def _load_mock_response(self):
+        """
+        Load the mock response from a pickle file.
+
+        Returns:
+        response (object): The loaded mock response.
+        """
+        with open("summary.pkl", "rb") as f:
+            response = pickle.load(f)
+        return response
 
 
 class FoliumMap:
@@ -886,57 +965,32 @@ class Landmarker(FoliumMap):
 
                 c = """ - **Click on the download button to download the map.**"""
 
-                d = """ - **Click on the satellite button to switch to satellite mode.**"""
-                st.write(a + "\n" + b + "\n" + c + "\n" + d)
+                d = """ - **Toggle the satellite map switch to see the map in satellite mode.**"""
 
-                # Add a download button for the map. Upon clicking the button, open a new tab with the map in it
-                satellite_mode = st.toggle(
-                    "Satellite Map",
-                    False,
-                    help="Switch on the satellite mode.",
-                )
+                e = """ - **Toggle the stream summary switch to see the summary stream.**"""
+                with st.expander("**Click here to see the instructions.**"):
+                    st.write(a + "\n" + b + "\n" + c + "\n" + d + "\n" + e)
+                with st.expander("**Click here to change the app settings.**"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        satellite_mode = st.toggle(
+                            "Satellite Map",
+                            False,
+                            help="Switch on the satellite mode.",
+                        )
+                    with col2:
+                        stream_mode = st.toggle(
+                            "Stream Summary",
+                            False,
+                            help="Switch on for streaming the summary as it's being generated.",
+                        )
+                    if stream_mode:
+                        st.session_state["summary_stream"] = True
+                    else:
+                        st.session_state["summary_stream"] = None
                 # Choose the tileset based on the switch
                 _ = fm.satalite_map() if satellite_mode else None
-                help_text = (
-                    """Satalite map is not available for download. What you are going to download is the normal map."""
-                    if satellite_mode
-                    else """Download the map to see the whole map."""
-                )
-
-                try:
-                    st.download_button(
-                        label="Download Map",
-                        data=map_html,
-                        file_name=f"{landmark_most_matched}_full_screen_map.html",
-                        mime="text/html",
-                        on_click=st.write(
-                            f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
-                            unsafe_allow_html=True,
-                        ),
-                        key="normal_map",
-                        help=help_text,
-                    )
-                except UnboundLocalError:
-                    st.write(
-                        """
-                    > boop-beep-boop...
-                    """
-                    )
-                    # open google maps in a new tab and map should be in satellite mode
-                lat = lat_most_matched
-                lon = lon_most_matched
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.link_button(
-                        label="Open in Google Maps",
-                        url=f"https://www.google.com/maps/search/?api=1&query={lat},{lon}",
-                    )
-                with col2:
-                    st.link_button(
-                        label="Open in Wikipedia",
-                        url=f"https://www.wikipedia.org/wiki/{landmark_most_matched}",
-                    )
-
+                # open google maps in a new tab and map should be in satellite mode
             else:
                 pass
             # Display the map if landmarks are detected, if not display a message
@@ -964,16 +1018,19 @@ class Landmarker(FoliumMap):
                         ##### LLM Based Summary:
                         """
                     )
-                    with st.spinner("Generating LLM Based Summary..."):
-                        prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
-                        summarizer = LLM_Summary()
-                        summary = summarizer.generate_summary(prompt)
-                        st.write(
-                            f"""
-                            > **{summary}**
-                            """
-                        )
-
+                    summarizer = OpenAI_LLM()
+                    prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
+                    # TODO: refactor this part and move it to a separate method
+                    if st.session_state.get("summary_stream") is not None:
+                        st.write_stream(summarizer.stream_summary(prompt))
+                    else:
+                        with st.spinner("Generating LLM Based Summary..."):
+                            summary = summarizer.generate_summary(prompt)
+                            st.write(
+                                f"""
+                                > **{summary}**
+                                """
+                            )
                 except Exception as e:
                     st.error(
                         f"""
@@ -985,6 +1042,43 @@ class Landmarker(FoliumMap):
                         """
                     )
                     st.stop()
+                help_text = (
+                    """Satalite map is not available for download. What you are going to download is the normal map."""
+                    if satellite_mode
+                    else """Download the map to see the whole map."""
+                )
+                lat = lat_most_matched
+                lon = lon_most_matched
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.link_button(
+                        label="Show in Google Maps",
+                        url=f"https://www.google.com/maps/search/?api=1&query={lat},{lon}",
+                    )
+                with col2:
+                    st.link_button(
+                        label="Open Wikipedia Page",
+                        url=f"https://www.wikipedia.org/wiki/{landmark_most_matched}",
+                    )
+                    try:
+                        col3.download_button(
+                            label="Download Map",
+                            data=map_html,
+                            file_name=f"{landmark_most_matched}_full_screen_map.html",
+                            mime="text/html",
+                            on_click=st.write(
+                                f'<a href="data:text/html;base64,{base64.b64encode(map_html.encode()).decode()}" download="map.html" style="display: none;">Download Map</a>',
+                                unsafe_allow_html=True,
+                            ),
+                            key="normal_map",
+                            help=help_text,
+                        )
+                    except UnboundLocalError:
+                        st.write(
+                            """
+                        > boop-beep-boop...
+                        """
+                        )
                 fm.display_map(self.screen_width, self.screen_height)
 
             else:
