@@ -1095,7 +1095,7 @@ class Landmarker(FoliumMap):
             st.write("")
         footer = """
         ---
-        ###### This app was created by _[Elshad Sabziyev](https://www.github.com/elshadsabziyev)_ using _[Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision)_, and _[Folium](https://python-visualization.github.io/folium/)_.
+        ###### This app was created by _[Elshad Sabziyev](https://www.github.com/elshadsabziyev)_ using _[Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision)_,_[Folium](https://python-visualization.github.io/folium/)_ and _[OpenAI API](https://openai.com)_.
         """
         st.markdown(footer, unsafe_allow_html=True)
 
