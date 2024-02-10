@@ -9,6 +9,7 @@ from geopy.geocoders import Nominatim
 import folium
 from folium import plugins
 import branca.colormap as cm
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
 import openai
@@ -424,6 +425,48 @@ class FoliumMap:
             )
             st.stop()
 
+    @staticmethod
+    def get_wikipedia_page(landmark):
+        """
+        Get the correct Wikipedia page for a given landmark.
+
+        Parameters:
+        landmark (str): The name of the landmark.
+
+        Returns:
+        page_url (str): The URL of the Wikipedia page for the landmark.
+        """
+        try:
+            response = requests.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "format": "json",
+                    "list": "search",
+                    "srsearch": landmark,
+                },
+            ).json()
+            if response["query"]["search"]:
+                page_title = response["query"]["search"][0]["title"]
+                page_url = (
+                    f"https://www.wikipedia.org/wiki/{page_title.replace(' ', '_')}"
+                )
+                return page_url
+            else:
+                return None
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: Wikipedia page could not be retrieved.
+                - Error Code: 0x021
+                - There may be issues with Wikipedia API.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
+
     def _create_colormap(self):
         """
         Create a linear color map with white, yellow, and green colors.
@@ -573,11 +616,10 @@ class FoliumMap:
             popup=folium.Popup(
                 f"<strong>{landmark_name}</strong><br><em>{confidence}</em>",
                 show=True,
-                max_width=100
+                max_width=100,
             ),
             icon=icon,
         ).add_to(self.map)
-        
 
     def _get_marker_icon(self, confidence_score, icon_pin, icon_star, icon_x):
         """
@@ -645,7 +687,6 @@ class FoliumMap:
             fill_color=f"{'red' if score < 0.35 else 'yellow' if score < 0.65 else 'green'}",
             popup="Accuracy",
             opacity=0.5,
-
         ).add_to(self.map)
 
     def satalite_map(self):
@@ -1082,10 +1123,14 @@ class Landmarker(FoliumMap):
                         label="Show in Google Maps",
                         url=f"https://www.google.com/maps/search/?api=1&query={lat},{lon}",
                     )
+                wiki_url = (
+                    fm.get_wikipedia_page(landmark_most_matched)
+                    or f"https://www.google.com/search?q={landmark_most_matched} wikipedia&btnI"
+                )
                 with col2:
                     st.link_button(
                         label="Open Wikipedia Page",
-                        url=f"https://www.wikipedia.org/wiki/{landmark_most_matched}",
+                        url=wiki_url,
                     )
                     try:
                         col3.download_button(
