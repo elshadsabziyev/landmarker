@@ -634,13 +634,14 @@ class FoliumMap:
         lat (float): Latitude of the heatmap.
         lon (float): Longitude of the heatmap.
         """
-        radius = ACCURACY_HEATMAP_RADIUS
-        folium.plugins.HeatMap(
-            [(lat, lon)],
-            radius=radius / 1.2,
-            blur=13,
-            gradient={0.4: "blue", 0.65: "lime", 1: "red"},
-        ).add_to(self.map)
+        # radius = ACCURACY_HEATMAP_RADIUS
+        # folium.plugins.HeatMap(
+        #     [(lat, lon)],
+        #     radius=radius / 1.2,
+        #     blur=13,
+        #     gradient={0.4: "blue", 0.65: "lime", 1: "red"},
+        # ).add_to(self.map)
+        pass
 
     def satalite_map(self):
         """
@@ -657,7 +658,6 @@ class FoliumMap:
                 name="Esri Satellite",
                 overlay=False,
                 control=True,
-                
             )
             satalite_map.add_to(self.map)
             try_count_2 = 0
