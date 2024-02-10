@@ -1,6 +1,7 @@
 # Import necessary libraries
 import base64
 import pickle
+import time
 from PIL import Image as Img
 from google.cloud import vision
 from google.oauth2 import service_account
@@ -302,7 +303,9 @@ class OpenAI_LLM(Credentials):
                 max_tokens=110,
                 stream=True,
             )
-            yield summary
+            for s in summary:
+                yield s
+                time.sleep(0.06)
         except Exception as e:
             st.error(
                 f"""
@@ -568,9 +571,9 @@ class FoliumMap:
         folium.Marker(
             location=[lat, lon],
             popup=folium.Popup(
-                f"*{landmark_name}*<br>{confidence}",
+                f"<strong>{landmark_name}</strong><br><em>{confidence}</em>",
                 show=True,
-                max_width=80,
+                max_width=100
             ),
             icon=icon,
         ).add_to(self.map)
@@ -589,9 +592,9 @@ class FoliumMap:
         Returns:
         icon (folium.features.DivIcon): The marker icon.
         """
-        if confidence_score < 0.5:
+        if confidence_score < 0.35:
             icon = icon_x
-        elif confidence_score < 0.8:
+        elif confidence_score < 0.65:
             icon = icon_pin
         else:
             icon = icon_star
@@ -607,9 +610,9 @@ class FoliumMap:
         Returns:
         color (str): The marker color.
         """
-        if confidence_score < 0.5:
+        if confidence_score < 0.35:
             color = "red"
-        elif confidence_score < 0.8:
+        elif confidence_score < 0.65:
             color = "yellow"
         else:
             color = "green"
@@ -629,7 +632,7 @@ class FoliumMap:
 
             self.add_marker(lat, lon, landmark_name, confidence)
 
-    def add_heatmap(self, lat, lon):
+    def add_heatmap(self, lat, lon, score):
         """
         Instead of adding a heatmap, this method adds a circle to the map.
         It acts as background for the markers.
@@ -637,10 +640,11 @@ class FoliumMap:
         folium.Circle(
             location=[lat, lon],
             radius=ACCURACY_HEATMAP_RADIUS * 1.8,
-            color=f"{self._get_marker_color(self.max_score)}",
+            color=f"{'red' if score < 0.35 else 'yellow' if score < 0.65 else 'green'}",
             fill=True,
-            fill_color=f"{self._get_marker_color(self.max_score)}",
+            fill_color=f"{'red' if score < 0.35 else 'yellow' if score < 0.65 else 'green'}",
             popup="Accuracy",
+            opacity=0.5,
 
         ).add_to(self.map)
 
@@ -932,7 +936,7 @@ class Landmarker(FoliumMap):
                 lat = landmark.locations[0].lat_lng.latitude
                 lon = landmark.locations[0].lat_lng.longitude
                 fm.add_marker(lat, lon, landmark_name, confidence)
-                fm.add_heatmap(lat, lon)
+                fm.add_heatmap(lat, lon, landmark.score)
                 if landmark.score > landmark_most_matched_score:
                     landmark_most_matched_score = landmark.score
                     landmark_most_matched = landmark_name
@@ -957,7 +961,7 @@ class Landmarker(FoliumMap):
 
             # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map extend by 10%
             try:
-                fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40], max_zoom=18)
+                fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40], max_zoom=17)
             except Exception as e:
                 st.warning(
                     f"""
