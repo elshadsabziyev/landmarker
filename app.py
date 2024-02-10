@@ -1049,6 +1049,7 @@ class Landmarker(FoliumMap):
                     # TODO: refactor this part and move it to a separate method
                     if st.session_state.get("summary_stream") is not None:
                         st.write_stream(summarizer.stream_summary(prompt))
+                        time.sleep(0.10)
                     else:
                         with st.spinner("Generating LLM Based Summary..."):
                             summary = summarizer.generate_summary(prompt)
