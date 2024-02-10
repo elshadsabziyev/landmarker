@@ -15,7 +15,7 @@ from streamlit_js_eval import streamlit_js_eval
 
 # Constants
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
-ACCURACY_HEATMAP_RADIUS = 0
+ACCURACY_HEATMAP_RADIUS = 10
 DEFAULT_ZOOM_START = 2
 DEFAULT_MOBILE_MAX_WIDTH = 500
 DEBUG_MODE_WARNING_ENABLED = False
@@ -568,10 +568,13 @@ class FoliumMap:
         folium.Marker(
             location=[lat, lon],
             popup=folium.Popup(
-                f"{landmark_name}<br>{confidence}",
+                f"*{landmark_name}*<br>{confidence}",
+                show=True,
+                max_width=80,
             ),
             icon=icon,
         ).add_to(self.map)
+        
 
     def _get_marker_icon(self, confidence_score, icon_pin, icon_star, icon_x):
         """
@@ -628,20 +631,18 @@ class FoliumMap:
 
     def add_heatmap(self, lat, lon):
         """
-        Add a heatmap to the map.
-
-        Parameters:
-        lat (float): Latitude of the heatmap.
-        lon (float): Longitude of the heatmap.
+        Instead of adding a heatmap, this method adds a circle to the map.
+        It acts as background for the markers.
         """
-        # radius = ACCURACY_HEATMAP_RADIUS
-        # folium.plugins.HeatMap(
-        #     [(lat, lon)],
-        #     radius=radius / 1.2,
-        #     blur=13,
-        #     gradient={0.4: "blue", 0.65: "lime", 1: "red"},
-        # ).add_to(self.map)
-        pass
+        folium.Circle(
+            location=[lat, lon],
+            radius=ACCURACY_HEATMAP_RADIUS * 1.8,
+            color=f"{self._get_marker_color(self.max_score)}",
+            fill=True,
+            fill_color=f"{self._get_marker_color(self.max_score)}",
+            popup="Accuracy",
+
+        ).add_to(self.map)
 
     def satalite_map(self):
         """
@@ -956,7 +957,7 @@ class Landmarker(FoliumMap):
 
             # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map extend by 10%
             try:
-                fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40])
+                fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40], max_zoom=18)
             except Exception as e:
                 st.warning(
                     f"""
