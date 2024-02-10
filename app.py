@@ -15,7 +15,7 @@ from streamlit_js_eval import streamlit_js_eval
 
 # Constants
 SUPPORTED_FORMATS = ("png", "jpg", "jpeg", "webp")
-ACCURACY_HEATMAP_RADIUS = 20
+ACCURACY_HEATMAP_RADIUS = 0
 DEFAULT_ZOOM_START = 2
 DEFAULT_MOBILE_MAX_WIDTH = 500
 DEBUG_MODE_WARNING_ENABLED = False
@@ -982,6 +982,15 @@ class Landmarker(FoliumMap):
                 e = """ - **Toggle the stream summary switch to see the summary stream.**"""
                 with st.expander("**Click here to see the instructions.**"):
                     st.write(a + "\n" + b + "\n" + c + "\n" + d + "\n" + e)
+                    st.write(
+                        """
+                        ---
+                        ICON GUIDE:
+                        - **Red X**: Low confidence
+                        - **Yellow Pin**: Medium confidence
+                        - **Green Star**: High confidence
+                        """
+                    )
                 with st.expander("**Click here to change the app settings.**"):
                     col1, col2 = st.columns(2)
                     with col1:
