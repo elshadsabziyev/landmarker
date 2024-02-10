@@ -448,21 +448,27 @@ class FoliumMap:
         city (str): The city of the location.
         country (str): The country of the location.
         """
+        try_count = 0
         try:
             location = self.geo_locator.reverse(f"{lat}, {lon}")
+            try_count = 0
         except Exception as e:
-            st.error(
-                f"""
-                Error: {e}
-                ### Error: Location details could not be retrieved.
-                - Error Code: 0x007
-                - There may be issues with Geolocataion Provider.
-                - Also if you switching between satellite and normal mode too fast, this error may occur.
-                - Most likely, it's not your fault.
-                - Please try again. If the problem persists, please contact the developer.
-                """
-            )
-            st.stop()
+            try_count += 1
+            if try_count > 2:
+                st.error(
+                    f"""
+                    Error: {e}
+                    ### Error: Location details could not be retrieved.
+                    - Error Code: 0x007
+                    - There may be issues with Geolocataion Provider.
+                    - Also if you switching between satellite and normal mode too fast, this error may occur.
+                    - Most likely, it's not your fault.
+                    - Please try again. If the problem persists, please contact the developer.
+                    """
+                )
+                st.stop()
+            else:
+                st.rerun()
         address = location.raw["address"]
 
         city_keys = ["city", "town", "village", "suburb"]
@@ -643,6 +649,7 @@ class FoliumMap:
         Returns:
         satalite_map (folium.TileLayer): The satalite map layer.
         """
+        try_count_2 = 0
         try:
             satalite_map = folium.TileLayer(
                 tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -650,21 +657,27 @@ class FoliumMap:
                 name="Esri Satellite",
                 overlay=False,
                 control=True,
+                
             )
             satalite_map.add_to(self.map)
+            try_count_2 = 0
             return satalite_map
         except Exception as e:
-            st.error(
-                f"""
-                Error: {e}
-                ### Error: Satalite map could not be created.
-                - Error Code: 0x010
-                - There may be issues with Map Tile Provider.
-                - Most likely, it's not your fault.
-                - Please try again. If the problem persists, please contact the developer.
-                """
-            )
-            st.stop()
+            try_count_2 += 1
+            if try_count_2 > 2:
+                st.error(
+                    f"""
+                    Error: {e}
+                    ### Error: Satalite map could not be created.
+                    - Error Code: 0x010
+                    - There may be issues with Map Tile Provider.
+                    - Most likely, it's not your fault.
+                    - Please try again. If the problem persists, please contact the developer.
+                    """
+                )
+                st.stop()
+            else:
+                st.rerun()
 
     def get_city_country(self, lat, lon):
         """
@@ -688,7 +701,6 @@ class FoliumMap:
         Parameters:
         max_content_width (int): The maximum width of the map.
         """
-        aspect_ratio = max_content_width / max_content_height
 
         try:
             components.html(
