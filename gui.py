@@ -277,10 +277,10 @@ class Landmarker(FoliumMap):
                     st.write(
                         """
                         ---
-                        ICON GUIDE:
-                        - **Red X**: Low confidence
+                        PIN COLOR GUIDE:
+                        - **Red Pin**: Low confidence
                         - **Yellow Pin**: Medium confidence
-                        - **Green Star**: High confidence
+                        - **Green Pin**: High confidence
                         """
                     )
                 with st.expander("**Click here to change the app settings.**"):

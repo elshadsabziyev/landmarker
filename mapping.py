@@ -82,6 +82,7 @@ class FoliumMap:
         Returns:
         page_url (str): The URL of the Wikipedia page for the landmark.
         """
+        tries = 0
         try:
             response = requests.get(
                 "https://en.wikipedia.org/w/api.php",
@@ -97,21 +98,27 @@ class FoliumMap:
                 page_url = (
                     f"https://www.wikipedia.org/wiki/{page_title.replace(' ', '_')}"
                 )
+                tries = 0
                 return page_url
             else:
+                tries = 0
                 return None
         except Exception as e:
-            st.error(
-                f"""
-                Error: {e}
-                ### Error: Wikipedia page could not be retrieved.
-                - Error Code: 0x021
-                - There may be issues with Wikipedia API.
-                - Most likely, it's not your fault.
-                - Please try again. If the problem persists, please contact the developer.
-                """
-            )
-            st.stop()
+            tries += 1
+            if tries > 2:
+                st.error(
+                    f"""
+                    Error: {e}
+                    ### Error: Wikipedia page could not be retrieved.
+                    - Error Code: 0x021
+                    - There may be issues with Wikipedia API.
+                    - Most likely, it's not your fault.
+                    - Please try again. If the problem persists, please contact the developer.
+                    """
+                )
+                st.stop()
+            else:
+                st.rerun()
 
     def _create_colormap(self):
         """
@@ -281,11 +288,11 @@ class FoliumMap:
         icon (folium.features.DivIcon): The marker icon.
         """
         if confidence_score < 0.35:
-            icon = icon_x
+            icon = icon_pin
         elif confidence_score < 0.65:
             icon = icon_pin
         else:
-            icon = icon_star
+            icon = icon_pin
         return icon
 
     def _get_marker_color(self, confidence_score):
@@ -301,7 +308,7 @@ class FoliumMap:
         if confidence_score < 0.35:
             color = "red"
         elif confidence_score < 0.65:
-            color = "yellow"
+            color = "#ff7e37"
         else:
             color = "green"
         return color
