@@ -38,7 +38,7 @@ class OpenAI_LLM(Credentials):
                 model="gpt-3.5-turbo-0125",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
-                max_tokens=110,
+                max_tokens=150,
             )
             response = summary.choices[0].message.content
             return response
@@ -72,7 +72,7 @@ class OpenAI_LLM(Credentials):
                 model="gpt-3.5-turbo-0125",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
-                max_tokens=110,
+                max_tokens=150,
                 stream=True,
             )
             for s in summary:
