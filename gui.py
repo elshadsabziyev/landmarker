@@ -8,7 +8,7 @@ import base64
 import time
 from mapping import FoliumMap
 from landmark_detection import GoogleCloudVision, MockGoogleCloudVision
-from openai_summary import OpenAI_LLM
+from openai_summary import OpenAI_LLM, MockOpenAI_LLM
 
 # Constants
 SUPPORTED_FORMATS = ["png", "jpg", "jpeg", "webp"]
@@ -28,6 +28,7 @@ class Landmarker(FoliumMap):
         self.debug = debug
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
+        self.summarizer = self.init_OpenAI_LLM()
         self.set_page_config()
         self.screen_width = 0
         self.screen_height = 0
@@ -56,7 +57,11 @@ class Landmarker(FoliumMap):
             return MockGoogleCloudVision()
         else:
             return GoogleCloudVision()
-
+    def init_OpenAI_LLM(self):
+        if self.debug:
+            return MockOpenAI_LLM()
+        else:
+            return OpenAI_LLM()
     def init_folium_map(self):
         return FoliumMap()
 
@@ -331,15 +336,14 @@ class Landmarker(FoliumMap):
                         ##### LLM Based Summary:
                         """
                     )
-                    summarizer = OpenAI_LLM()
                     prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
                     # TODO: refactor this part and move it to a separate method
                     if st.session_state.get("summary_stream") is not None:
-                        st.write_stream(summarizer.stream_summary(prompt))
+                        st.write_stream(self.summarizer.stream_summary(prompt))
                         time.sleep(0.10)
                     else:
                         with st.spinner("Generating LLM Based Summary..."):
-                            summary = summarizer.generate_summary(prompt)
+                            summary = self.summarizer.generate_summary(prompt)
                             st.write(
                                 f"""
                                 > **{summary}**
