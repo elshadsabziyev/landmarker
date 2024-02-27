@@ -110,29 +110,37 @@ class MockOpenAI_LLM:
 
     def generate_summary(self, prompt):
         """
-        Mock method to simulate the generation of a summary about the landmark detected.
-
+        Mock method to simulate the generation of a summary about the landmark detected using the OpenAI API.
+        
         Parameters:
-        prompt (str): The prompt to generate the summary.
+        prompt (str): The prompt to generate the summary (will be ignored)
 
         Returns:
         summary (str): The generated summary.
         """
-        # Load the mock response from a pickle file
-        response = self._load_mock_response()
 
-        # Extract the summary from the mock response
-        summary = response
-        return summary
-
-    def _load_mock_response(self):
+        # Summary about Maiden Tower (Baku, Azerbaijan)
+        summary ="""
+        The Maiden Tower is a 12th-century monument in the Old City, Baku, Azerbaijan. Along with the Shirvanshahs' Palace, dated to the 15th century, it forms a group of historic monuments listed in 2001 under the UNESCO World Heritage List of historical monuments as cultural property, Category III. It is one of the most prominent national and cultural symbols of Azerbaijan.
         """
-        Load the mock response from a pickle file.
+        return summary
+    
+    def stream_summary(self, prompt):
+        """
+        Mock method to simulate the generation of a summary about the landmark detected using the OpenAI API.
+        Unlike the generate_summary method, this method is used to stream the summary to the app.
+        
+        Parameters:
+        prompt (str): The prompt to generate the summary (will be ignored)
 
         Returns:
-        response (object): The loaded mock response.
+        summary (OpenAI Stream): The generated summary.
         """
-        with open("summary.pkl", "rb") as f:
-            response = pickle.load(f)
-        return response
 
+        # Summary about Maiden Tower (Baku, Azerbaijan)
+        summary ="""
+        The Maiden Tower is a 12th-century monument in the Old City, Baku, Azerbaijan. Along with the Shirvanshahs' Palace, dated to the 15th century, it forms a group of historic monuments listed in 2001 under the UNESCO World Heritage List of historical monuments as cultural property, Category III. It is one of the most prominent national and cultural symbols of Azerbaijan.
+        """
+        for s in summary:
+            yield s
+            time.sleep(0.06)

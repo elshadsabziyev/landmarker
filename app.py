@@ -6,7 +6,7 @@ from gui import Landmarker
 
 if __name__ == "__main__":
     try:
-        debug_mode = True if st.secrets["debug_mode"] == "True" else False
+        debug_mode = True if st.secrets["Config"]["debug_mode"] == "True" else False
     except Exception as e:
         debug_mode = False
     landmarker = Landmarker(debug=debug_mode)
