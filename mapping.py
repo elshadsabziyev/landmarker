@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 # Constants
 DEFAULT_ZOOM_START = 2
-ACCURACY_HEATMAP_RADIUS = 100
+ACCURACY_HEATMAP_RADIUS = 50
 
 class FoliumMap:
     # Class definitions
