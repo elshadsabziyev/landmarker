@@ -460,7 +460,18 @@ class Landmarker(FoliumMap):
                 ):
                     if reviews:
                         for review in reviews:
-                            st.markdown(f"##### {review['Username']}")
+                            def mask_username(username):
+                                words = username.split()
+                                masked_words = []
+                                for word in words:
+                                    if len(word) > 2:
+                                        masked_word = word[:2] + "\\*" * (len(word) - 3) + word[-1]
+                                    else:
+                                        masked_word = word
+                                    masked_words.append(masked_word)
+                                return ' '.join(masked_words)
+
+                            st.markdown(f"##### {mask_username(review['Username'])}")
                             st.markdown(
                                 f""" {"**Excellent**" if review['Score10'] >= 9 else "**Good**" if review['Score10'] >= 7 else "**Average**" if review['Score10'] >= 5 else "**Poor**" if review['Score10'] >= 3 else "**Terrible**"} ({"⭐" * 1 if review['Score10'] <= 2 else "⭐" * 2 if review['Score10'] <= 4 else "⭐" * 3 if review['Score10'] <= 6 else "⭐" * 4 if review['Score10'] <= 8 else "⭐" * 5})"""
                             )
