@@ -9,11 +9,14 @@ import time
 from mapping import FoliumMap
 from landmark_detection import GoogleCloudVision, MockGoogleCloudVision
 from openai_summary import OpenAI_LLM, MockOpenAI_LLM
+from firestore import Firestore
 
 # Constants
 SUPPORTED_FORMATS = ["png", "jpg", "jpeg", "webp"]
 DEBUG_MODE_WARNING_ENABLED = True
 
+
+# TODO: Refactor and add other parent classes
 class Landmarker(FoliumMap):
     # Class definitions
     """
@@ -29,6 +32,7 @@ class Landmarker(FoliumMap):
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
         self.summarizer = self.init_OpenAI_LLM()
+        self.firestore_connection = self.init_firestore()
         self.set_page_config()
         self.screen_width = 0
         self.screen_height = 0
@@ -57,13 +61,18 @@ class Landmarker(FoliumMap):
             return MockGoogleCloudVision()
         else:
             return GoogleCloudVision()
+
     def init_OpenAI_LLM(self):
         if self.debug:
             return MockOpenAI_LLM()
         else:
             return OpenAI_LLM()
+
     def init_folium_map(self):
         return FoliumMap()
+
+    def init_firestore(self):
+        return Firestore()
 
     def set_page_config(self):
         st.set_page_config(
@@ -402,7 +411,85 @@ class Landmarker(FoliumMap):
                         """
                         )
                 fm.display_map(self.screen_width, self.screen_height)
+                st.write(
+                    """
+                    ---
+                    """
+                )
+                st.write(
+                    """
+                    ## Reviews:
+                    """
+                )
 
+                reviews = self.firestore_connection.get_review_for_landmark(
+                    lon, lat, 0.1, landmark_most_matched
+                )
+                # Button to add a review
+                with st.expander("**Click here to write a review.**"):
+                    with st.form(key="add_review_form"):
+                        username = st.text_input(
+                            label="Username", help="Enter your username."
+                        )
+                        review = st.text_area(label="Review", help="Enter your review.")
+                        score = st.slider(
+                            label="Score",
+                            min_value=1,
+                            max_value=10,
+                            value=5,
+                            help="Choose a score.",
+                            step=1,
+                        )
+                        submit_button = st.form_submit_button(label="Submit")
+
+                    if submit_button:
+                        if username and review and score:
+                            self.firestore_connection.create_new_review(
+                                review,
+                                landmark_most_matched,
+                                f"{lon}/{lat}",
+                                score,
+                                username,
+                            )
+                            st.success("- Review added successfully.")
+                            st.rerun()
+                        else:
+                            st.warning("- Please fill in all the fields.")
+                with st.expander(
+                    "**Click here to see the reviews for this landmark.**"
+                ):
+                    if reviews:
+                        for review in reviews:
+                            st.markdown(f"##### {review['Username']}")
+                            st.markdown(
+                                f""" {"**Excellent**" if review['Score10'] >= 9 else "**Good**" if review['Score10'] >= 7 else "**Average**" if review['Score10'] >= 5 else "**Poor**" if review['Score10'] >= 3 else "**Terrible**"} ({"⭐" * 1 if review['Score10'] <= 2 else "⭐" * 2 if review['Score10'] <= 4 else "⭐" * 3 if review['Score10'] <= 6 else "⭐" * 4 if review['Score10'] <= 8 else "⭐" * 5})"""
+                            )
+                            st.markdown(f"> {review['Review']}")
+                            st.markdown("---")
+                    else:
+                        st.write(
+                            """
+                            - No reviews yet. Be the first one to review this landmark!
+                            """
+                        )
+                with st.expander("**Click here to see AI generated review summary.**"):
+                    if reviews:
+                        prompt = f"Craft a professional and concise 2-3 sentence review summary about {landmark_most_matched} in {city}, {country} considering the reviews: {', '.join([r['Review'] for r in reviews])}."
+                        summary = self.summarizer.summarize_review(prompt)
+                        st.write(
+                            f"Overall Score: {round(sum([r['Score10'] for r in reviews])/len(reviews), 2)}"
+                        )
+                        st.write(
+                            f"""
+                            > **{summary}**
+                            """
+                        )
+                    else:
+                        st.write(
+                            """
+                            - No reviews yet. Be the first one to review this landmark!
+                            """
+                        )
             else:
                 st.write(
                     """
