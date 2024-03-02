@@ -70,7 +70,7 @@ class OpenAI_LLM(Credentials):
             openai.api_key = self.OpenAI_credentials
             summary = openai.chat.completions.create(
                 model="gpt-3.5-turbo-0125",
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "system", "content": "Your job is provide, short, concise, and informative summary about the landmark."}, {"role": "user", "content": prompt}],
                 temperature=0.2,
                 max_tokens=150,
                 stream=True,
@@ -78,6 +78,39 @@ class OpenAI_LLM(Credentials):
             for s in summary:
                 yield s
                 time.sleep(0.06)
+        except Exception as e:
+            st.error(
+                f"""
+                Error: {e}
+                ### Error: LLM Based Summary could not be generated.
+                - Error Code: 0x018
+                - There may be issues with OpenAI API.
+                - Most likely, it's not your fault.
+                - Please try again. If the problem persists, please contact the developer.
+                """
+            )
+            st.stop()
+    
+    def summarize_review(self, review):
+        """
+        Generate a summary about the review using the OpenAI API.
+
+        Parameters:
+        review (str): The review to generate the summary.
+
+        Returns:
+        summary (str): The generated summary.
+        """
+        try:
+                openai.api_key = self.OpenAI_credentials
+                summary = openai.chat.completions.create(
+                    model="gpt-3.5-turbo-0125",
+                    messages=[{"role": "system", "content": "Your job is to summarize the reviews for a given landmark."}, {"role": "user", "content": review}],
+                    temperature=0.2,
+                    max_tokens=150,
+                )
+                response = summary.choices[0].message.content
+                return response
         except Exception as e:
             st.error(
                 f"""
@@ -144,3 +177,20 @@ class MockOpenAI_LLM:
         for s in summary:
             yield s
             time.sleep(0.06)
+    
+    def summarize_review(self, review):
+        """
+        Mock method to simulate the generation of a summary about the review using the OpenAI API.
+        
+        Parameters:
+        review (str): The review to generate the summary (will be ignored)
+
+        Returns:
+        summary (str): The generated summary.
+        """
+
+        # Summary about the review
+        summary ="""
+        The food was delicious and the service was excellent. I would definitely recommend this restaurant to my friends and family.
+        """
+        return summary
