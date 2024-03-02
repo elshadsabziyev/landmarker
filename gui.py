@@ -410,7 +410,8 @@ class Landmarker(FoliumMap):
                         > boop-beep-boop...
                         """
                         )
-                fm.display_map(self.screen_width, self.screen_height)
+                with st.spinner("Loading the map..."):
+                    fm.display_map(self.screen_width, self.screen_height)
                 st.write(
                     """
                     ---
@@ -421,86 +422,86 @@ class Landmarker(FoliumMap):
                     ## Reviews:
                     """
                 )
-
-                reviews = self.firestore_connection.get_review_for_landmark(
-                    lon, lat, 0.1, landmark_most_matched
-                )
-                # Button to add a review
-                with st.expander("**Click here to write a review.**"):
-                    with st.form(key="add_review_form"):
-                        username = st.text_input(
-                            label="Username", help="Enter your username."
-                        )
-                        review = st.text_area(label="Review", help="Enter your review.")
-                        score = st.slider(
-                            label="Score",
-                            min_value=1,
-                            max_value=10,
-                            value=5,
-                            help="Choose a score.",
-                            step=1,
-                        )
-                        submit_button = st.form_submit_button(label="Submit")
-
-                    if submit_button:
-                        if username and review and score:
-                            self.firestore_connection.create_new_review(
-                                review,
-                                landmark_most_matched,
-                                f"{lon}/{lat}",
-                                score,
-                                username,
+                with st.spinner("Loading reviews..."):
+                    reviews = self.firestore_connection.get_review_for_landmark(
+                        lon, lat, 0.1, landmark_most_matched
+                    )
+                    # Button to add a review
+                    with st.expander("**Click here to write a review.**"):
+                        with st.form(key="add_review_form"):
+                            username = st.text_input(
+                                label="Username", help="Enter your username."
                             )
-                            st.success("- Review added successfully.")
-                            st.rerun()
+                            review = st.text_area(label="Review", help="Enter your review.")
+                            score = st.slider(
+                                label="Score",
+                                min_value=1,
+                                max_value=10,
+                                value=5,
+                                help="Choose a score.",
+                                step=1,
+                            )
+                            submit_button = st.form_submit_button(label="Submit")
+
+                        if submit_button:
+                            if username and review and score:
+                                self.firestore_connection.create_new_review(
+                                    review,
+                                    landmark_most_matched,
+                                    f"{lon}/{lat}",
+                                    score,
+                                    username,
+                                )
+                                st.success("- Review added successfully.")
+                                st.rerun()
+                            else:
+                                st.warning("- Please fill in all the fields.")
+                    with st.expander(
+                        "**Click here to see the reviews for this landmark.**"
+                    ):
+                        if reviews:
+                            for review in reviews:
+                                def mask_username(username):
+                                    words = username.split()
+                                    masked_words = []
+                                    for word in words:
+                                        if len(word) > 2:
+                                            masked_word = word[:2] + "\\*" * (len(word) - 3) + word[-1]
+                                        else:
+                                            masked_word = word
+                                        masked_words.append(masked_word)
+                                    return ' '.join(masked_words)
+
+                                st.markdown(f"##### {mask_username(review['Username'])}")
+                                st.markdown(
+                                    f""" {"**Excellent**" if review['Score10'] >= 9 else "**Good**" if review['Score10'] >= 7 else "**Average**" if review['Score10'] >= 5 else "**Poor**" if review['Score10'] >= 3 else "**Terrible**"} ({"⭐" * 1 if review['Score10'] <= 2 else "⭐" * 2 if review['Score10'] <= 4 else "⭐" * 3 if review['Score10'] <= 6 else "⭐" * 4 if review['Score10'] <= 8 else "⭐" * 5})"""
+                                )
+                                st.markdown(f"> {review['Review']}")
+                                st.markdown("---")
                         else:
-                            st.warning("- Please fill in all the fields.")
-                with st.expander(
-                    "**Click here to see the reviews for this landmark.**"
-                ):
-                    if reviews:
-                        for review in reviews:
-                            def mask_username(username):
-                                words = username.split()
-                                masked_words = []
-                                for word in words:
-                                    if len(word) > 2:
-                                        masked_word = word[:2] + "\\*" * (len(word) - 3) + word[-1]
-                                    else:
-                                        masked_word = word
-                                    masked_words.append(masked_word)
-                                return ' '.join(masked_words)
-
-                            st.markdown(f"##### {mask_username(review['Username'])}")
-                            st.markdown(
-                                f""" {"**Excellent**" if review['Score10'] >= 9 else "**Good**" if review['Score10'] >= 7 else "**Average**" if review['Score10'] >= 5 else "**Poor**" if review['Score10'] >= 3 else "**Terrible**"} ({"⭐" * 1 if review['Score10'] <= 2 else "⭐" * 2 if review['Score10'] <= 4 else "⭐" * 3 if review['Score10'] <= 6 else "⭐" * 4 if review['Score10'] <= 8 else "⭐" * 5})"""
+                            st.write(
+                                """
+                                - No reviews yet. Be the first one to review this landmark!
+                                """
                             )
-                            st.markdown(f"> {review['Review']}")
-                            st.markdown("---")
-                    else:
-                        st.write(
-                            """
-                            - No reviews yet. Be the first one to review this landmark!
-                            """
-                        )
-                with st.expander("**Click here to see AI generated review summary.**"):
-                    if reviews:
-                        prompt = f"Craft a professional and concise 2-3 sentence review summary about {landmark_most_matched} in {city}, {country} considering the reviews: {', '.join([r['Review'] for r in reviews])}."
-                        summary = self.summarizer.summarize_review(prompt)
-                        st.write(
-                            f"Overall Score: {round(sum([r['Score10'] for r in reviews])/len(reviews), 2)}"
-                        )
-                        st.write(
-                            f"""
-                            > **{summary}**
-                            """
-                        )
-                    else:
-                        st.write(
-                            """
-                            - No reviews yet. Be the first one to review this landmark!
-                            """
-                        )
+                    with st.expander("**Click here to see AI generated review summary.**"):
+                        if reviews:
+                            prompt = f"Craft a professional and concise 2-3 sentence review summary about {landmark_most_matched} in {city}, {country} considering the reviews: {', '.join([r['Review'] for r in reviews])}."
+                            summary = self.summarizer.summarize_review(prompt)
+                            st.write(
+                                f"Overall Score: {round(sum([r['Score10'] for r in reviews])/len(reviews), 2)}"
+                            )
+                            st.write(
+                                f"""
+                                > **{summary}**
+                                """
+                            )
+                        else:
+                            st.write(
+                                """
+                                - No reviews yet. Be the first one to review this landmark!
+                                """
+                            )
             else:
                 st.write(
                     """
@@ -515,6 +516,6 @@ class Landmarker(FoliumMap):
             st.write("")
         footer = """
         ---
-        ###### This app was created by _[Elshad Sabziyev](https://www.github.com/elshadsabziyev)_ using _[Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision)_,_[Folium](https://python-visualization.github.io/folium/)_ and _[OpenAI API](https://openai.com)_.
+        ###### This app was created by _[Elshad Sabziyev](https://www.github.com/elshadsabziyev)_ using _[Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision)_, _[Folium](https://python-visualization.github.io/folium/)_ and _[OpenAI API](https://openai.com)_.
         """
         st.markdown(footer, unsafe_allow_html=True)
