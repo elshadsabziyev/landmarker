@@ -7,6 +7,7 @@ import openai
 import time
 from credentials import Credentials
 
+
 class OpenAI_LLM(Credentials):
     # Class definitions
     """
@@ -70,7 +71,13 @@ class OpenAI_LLM(Credentials):
             openai.api_key = self.OpenAI_credentials
             summary = openai.chat.completions.create(
                 model="gpt-3.5-turbo-0125",
-                messages=[{"role": "system", "content": "Your job is provide, short, concise, and informative summary about the landmark."}, {"role": "user", "content": prompt}],
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Your job is provide, short, concise, and informative summary about the landmark.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
                 temperature=0.2,
                 max_tokens=150,
                 stream=True,
@@ -90,7 +97,7 @@ class OpenAI_LLM(Credentials):
                 """
             )
             st.stop()
-    
+
     def summarize_review(self, review):
         """
         Generate a summary about the review using the OpenAI API.
@@ -102,15 +109,23 @@ class OpenAI_LLM(Credentials):
         summary (str): The generated summary.
         """
         try:
-                openai.api_key = self.OpenAI_credentials
-                summary = openai.chat.completions.create(
-                    model="gpt-3.5-turbo-0125",
-                    messages=[{"role": "system", "content": "Your job is to summarize the reviews for a given landmark."}, {"role": "user", "content": review}],
-                    temperature=0.2,
-                    max_tokens=150,
-                )
-                response = summary.choices[0].message.content
-                return response
+            openai.api_key = self.OpenAI_credentials
+            summary = openai.chat.completions.create(
+                model="gpt-3.5-turbo-0125",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """Your job is to summarize the reviews for a given landmark. 
+                        You must focus on the reviews and extract as much info as possible and analyze the reviews 
+                        to write a conclusion with upsides and downsides of the landmark with some key points.""",
+                    },
+                    {"role": "user", "content": review},
+                ],
+                temperature=0.2,
+                max_tokens=150,
+            )
+            response = summary.choices[0].message.content
+            return response
         except Exception as e:
             st.error(
                 f"""
@@ -144,7 +159,7 @@ class MockOpenAI_LLM:
     def generate_summary(self, prompt):
         """
         Mock method to simulate the generation of a summary about the landmark detected using the OpenAI API.
-        
+
         Parameters:
         prompt (str): The prompt to generate the summary (will be ignored)
 
@@ -153,16 +168,16 @@ class MockOpenAI_LLM:
         """
 
         # Summary about Maiden Tower (Baku, Azerbaijan)
-        summary ="""
+        summary = """
         The Maiden Tower is a 12th-century monument in the Old City, Baku, Azerbaijan. Along with the Shirvanshahs' Palace, dated to the 15th century, it forms a group of historic monuments listed in 2001 under the UNESCO World Heritage List of historical monuments as cultural property, Category III. It is one of the most prominent national and cultural symbols of Azerbaijan.
         """
         return summary
-    
+
     def stream_summary(self, prompt):
         """
         Mock method to simulate the generation of a summary about the landmark detected using the OpenAI API.
         Unlike the generate_summary method, this method is used to stream the summary to the app.
-        
+
         Parameters:
         prompt (str): The prompt to generate the summary (will be ignored)
 
@@ -171,17 +186,17 @@ class MockOpenAI_LLM:
         """
 
         # Summary about Maiden Tower (Baku, Azerbaijan)
-        summary ="""
+        summary = """
         The Maiden Tower is a 12th-century monument in the Old City, Baku, Azerbaijan. Along with the Shirvanshahs' Palace, dated to the 15th century, it forms a group of historic monuments listed in 2001 under the UNESCO World Heritage List of historical monuments as cultural property, Category III. It is one of the most prominent national and cultural symbols of Azerbaijan.
         """
         for s in summary:
             yield s
             time.sleep(0.06)
-    
+
     def summarize_review(self, review):
         """
         Mock method to simulate the generation of a summary about the review using the OpenAI API.
-        
+
         Parameters:
         review (str): The review to generate the summary (will be ignored)
 
@@ -190,7 +205,7 @@ class MockOpenAI_LLM:
         """
 
         # Summary about the review
-        summary ="""
+        summary = """
         The food was delicious and the service was excellent. I would definitely recommend this restaurant to my friends and family.
         """
         return summary
