@@ -465,7 +465,7 @@ class Landmarker(FoliumMap):
                                     words = username.split()
                                     masked_words = []
                                     for word in words:
-                                        if len(word) > 2:
+                                        if len(word) > 3:
                                             masked_word = word[:2] + "\\*" * (len(word) - 3) + word[-1]
                                         else:
                                             masked_word = word
