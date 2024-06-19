@@ -8,8 +8,9 @@ import base64
 import time
 from mapping import FoliumMap
 from landmark_detection import GoogleCloudVision, MockGoogleCloudVision
-from openai_summary import OpenAI_LLM, MockOpenAI_LLM
+from ai_summary import MockOpenAI_LLM, AI_Summary
 from firestore import Firestore
+from streamlit_folium import st_folium
 
 # Constants
 SUPPORTED_FORMATS = ["png", "jpg", "jpeg", "webp"]
@@ -28,10 +29,11 @@ class Landmarker(FoliumMap):
 
     def __init__(self, debug=False):
         super().__init__()
+        st.logo(image="logo.png", link="https://landmarker.streamlit.app/")
         self.debug = debug
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
-        self.summarizer = self.init_OpenAI_LLM()
+        self.summarizer = self.init_TogetherAI()
         self.firestore_connection = self.init_firestore()
         self.set_page_config()
         self.screen_width = 0
@@ -62,11 +64,11 @@ class Landmarker(FoliumMap):
         else:
             return GoogleCloudVision()
 
-    def init_OpenAI_LLM(self):
+    def init_TogetherAI(self):
         if self.debug:
             return MockOpenAI_LLM()
         else:
-            return OpenAI_LLM()
+            return AI_Summary()
 
     def init_folium_map(self):
         return FoliumMap()
@@ -78,7 +80,7 @@ class Landmarker(FoliumMap):
         st.set_page_config(
             page_title="Landmark Detection",
             page_icon="🗿",
-            layout="centered",
+            layout="wide",
             initial_sidebar_state="auto",
         )
 
@@ -105,17 +107,31 @@ class Landmarker(FoliumMap):
             )
         title = """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap');
-        .title {
-            font-family: 'Major Mono Display', monospace;
-            color: #1c6f11;
-            top: 0px;
-            font-size: 3.1em;
-        }
+            @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap');
+            .title {
+                font-family: 'Major Mono Display', monospace;
+                background: linear-gradient(270deg, rgba(34,193,195,1), rgba(253,187,45,1));
+                background-size: 200% 200%;
+                animation: gradient 5s ease infinite;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                top: 0px;
+                font-size: 4.0em;
+            }
+
+            @keyframes gradient {
+                0% {background-position: 0% 50%;}
+                50% {background-position: 100% 50%;}
+                100% {background-position: 0% 50%;}
+            }
+            .title {
+                animation: gradient 2.5s ease-in-out infinite;
+            }
         </style>
 
+
         <div class="title">
-        LAND-MARKER
+        LAND~ MARKER
         </div>
         """
         st.markdown(title, unsafe_allow_html=True)
@@ -126,30 +142,31 @@ class Landmarker(FoliumMap):
             """,
             unsafe_allow_html=True,
         )
+        st.sidebar.title("Upload an Image")
+        with st.sidebar.expander("_**Click here to toggle the help view**_", expanded=True):
+            st.write("""
+# Welcome to the Landmark Detection App!
 
-        # Display the app sidebar
-        sidebar_title = """
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=monospace&display=swap');
-        .sidebar-title {
-            font-family: 'monospace', monospace;
-            font-weight: 1000;
-            color: #1c6f11;
-            top: 0px;
-            font-size: 1.5em;
-        }
-        </style>
+This app uses Google Cloud Vision to detect landmarks in images.
 
-        <div class="sidebar-title">
-        INSTRUCTIONS
-        </div>
-        """
+## How to use this app:
 
-        st.sidebar.markdown(sidebar_title, unsafe_allow_html=True)
-        st.sidebar.write(
-            """Use the upload widget to upload an image of a landmark. 
-            The app will display the landmarks detected by Google Cloud Vision."""
-        )
+1. **Upload an image**: Use the upload widget to upload an image of a landmark. The image should be in a common format like JPEG or PNG.
+
+2. **Wait for the app to process the image**: The app will send the image to Google Cloud Vision, which will analyze the image and identify any landmarks it contains. This process may take a few seconds.
+
+3. **View the results**: The app will display the landmarks detected by Google Cloud Vision.
+
+## Tips for best results:
+
+- Use clear, high-resolution images. The better the quality of the image, the more likely it is that Google Cloud Vision will be able to identify the landmark.
+
+- Try to make sure the landmark is the main focus of the image. If the landmark is in the background or partially obscured, it may be harder for Google Cloud Vision to identify it.
+
+- Google Cloud Vision can identify many famous landmarks, like the Eiffel Tower or the Grand Canyon. If you're not sure what to upload, try starting with a picture of a well-known landmark.
+
+We hope you enjoy using the Landmark Detection App!
+""")
 
         # Initialize Google Cloud Vision and Folium Map
         gc = self.gc
@@ -207,23 +224,17 @@ class Landmarker(FoliumMap):
                 use_column_width=True,
             )
         else:
-            # Display the app description
-            st.write(
-                """
-                Detect **landmarks** in an image and **mark** them on a map.
-                """
-            )
 
             # Display the app instructions
-            st.markdown(
-                """
-                ---
-                ### _Instructions_
-                - _**Click** on the **>** icon on the **top left corner** of the app to expand the sidebar._
-                - _**Upload** an image of a landmark using the upload **widget** on the sidebar._
-                """,
-                unsafe_allow_html=True,
-            )
+            with st.expander("_**Click here to toggle the help view**_", expanded=True):
+                st.markdown(
+                    """
+                    ### Instructions:
+                    - _**Click** on the **>** icon on the **top left corner** of the app to expand the sidebar._
+                    - _**Upload** an image of a landmark using the upload **widget** on the sidebar._
+                    """,
+                    unsafe_allow_html=True,
+                )
         landmark_most_matched = ""
         landmark_most_matched_score = 0
         lat_most_matched = 0
@@ -233,7 +244,8 @@ class Landmarker(FoliumMap):
             landmarks = gc.find_landmark(uploaded_file)
             for landmark in landmarks:
                 landmark_name = landmark.description
-                confidence = "Matched: " + str(round(landmark.score * 100, 2)) + "%"
+                confidence = "Matched: " + \
+                    str(round(landmark.score * 100, 2)) + "%"
                 lat = landmark.locations[0].lat_lng.latitude
                 lon = landmark.locations[0].lat_lng.longitude
                 fm.add_marker(lat, lon, landmark_name, confidence)
@@ -262,7 +274,8 @@ class Landmarker(FoliumMap):
 
             # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map extend by 10%
             try:
-                fm.map.fit_bounds(fm.map.get_bounds(), padding=[40, 40], max_zoom=17)
+                fm.map.fit_bounds(fm.map.get_bounds(), padding=[
+                                  40, 40], max_zoom=17)
             except Exception as e:
                 st.warning(
                     f"""
@@ -309,7 +322,7 @@ class Landmarker(FoliumMap):
                         stream_mode = st.toggle(
                             "Stream Summary",
                             False,
-                            help="Switch on for streaming the summary as it's being generated.",
+                            help="Switch on for streaming the summary as it's being generated. It bypasses the caching and get fresh summary in real-time.",
                         )
                     if stream_mode:
                         st.session_state["summary_stream"] = True
@@ -326,12 +339,46 @@ class Landmarker(FoliumMap):
                 city, country = fm.get_city_country(lat, lon)
                 if city and country:
                     if (city, country) != PREVIOUS_CITY_COUNTRY:
-                        st.write(
-                            f"""
-                            ## {landmark_most_matched}
-                            ### {city}, {country}
-                            """
-                        )
+                        with st.status("**Identifying the location...**", expanded=False) as status:
+                            st.write(
+                                f"""
+                                ## {landmark_most_matched}
+                                """
+                            )
+                            status.update(state="complete",
+                                          label=f"_Location Identified_ : **{city}, {country}**", expanded=True)
+                            try:
+                                prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
+                                # TODO: refactor this part and move it to a separate method
+                                if st.session_state.get("summary_stream") is not None:
+                                    st.write_stream(
+                                        self.summarizer.stream_summary(prompt))
+                                    time.sleep(0.10)
+                                else:
+                                    with st.spinner("Generating LLM Based Summary..."):
+                                        summary = self.summarizer.generate_summary(
+                                            prompt)
+                                        # write summary in bold
+                                        st.markdown(
+                                            f"**{str(summary).strip()}**"
+                                        )
+                                st.warning(
+                                    """
+                                    ###### The LLM Based Summary is generated by the AI model.
+                                    - The summary may not be accurate, please verify the information before using it.
+                                    """
+                                )
+                            except Exception as e:
+                                st.error(
+                                    f"""
+                                    Error: {e}
+                                    ### Error: LLM Based Summary could not be generated.
+                                    - Error Code: 0x017
+                                    - Most likely, it's not your fault.
+                                    - Please try again. If the problem persists, please contact the developer.
+                                    """
+                                )
+                                st.stop()
                         PREVIOUS_CITY_COUNTRY = (city, country)
                 else:
                     st.write(
@@ -339,36 +386,7 @@ class Landmarker(FoliumMap):
                         # Unknown Location
                         """
                     )
-                try:
-                    st.write(
-                        """
-                        ##### LLM Based Summary:
-                        """
-                    )
-                    prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
-                    # TODO: refactor this part and move it to a separate method
-                    if st.session_state.get("summary_stream") is not None:
-                        st.write_stream(self.summarizer.stream_summary(prompt))
-                        time.sleep(0.10)
-                    else:
-                        with st.spinner("Generating LLM Based Summary..."):
-                            summary = self.summarizer.generate_summary(prompt)
-                            st.write(
-                                f"""
-                                > **{summary}**
-                                """
-                            )
-                except Exception as e:
-                    st.error(
-                        f"""
-                        Error: {e}
-                        ### Error: LLM Based Summary could not be generated.
-                        - Error Code: 0x017
-                        - Most likely, it's not your fault.
-                        - Please try again. If the problem persists, please contact the developer.
-                        """
-                    )
-                    st.stop()
+
                 help_text = (
                     """Satalite map is not available for download. What you are going to download is the normal map."""
                     if satellite_mode
@@ -376,11 +394,12 @@ class Landmarker(FoliumMap):
                 )
                 lat = lat_most_matched
                 lon = lon_most_matched
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3 = st.columns([1, 1, 1])
                 with col1:
                     st.link_button(
-                        label="Show in Google Maps",
+                        label="Open Google Maps",
                         url=f"https://www.google.com/maps/search/?api=1&query={lat},{lon}",
+                        use_container_width=True,
                     )
                 wiki_url = (
                     fm.get_wikipedia_page(landmark_most_matched)
@@ -388,8 +407,9 @@ class Landmarker(FoliumMap):
                 )
                 with col2:
                     st.link_button(
-                        label="Open Wikipedia Page",
+                        label="Open Wiki Page",
                         url=wiki_url,
+                        use_container_width=True,
                     )
                     try:
                         col3.download_button(
@@ -403,6 +423,7 @@ class Landmarker(FoliumMap):
                             ),
                             key="normal_map",
                             help=help_text,
+                            use_container_width=True,
                         )
                     except UnboundLocalError:
                         st.write(
@@ -410,15 +431,17 @@ class Landmarker(FoliumMap):
                         > boop-beep-boop...
                         """
                         )
-                with st.spinner("Loading the map..."):
-                    fm.display_map(self.screen_width, self.screen_height)
+                with st.status("Loading the map...", expanded=False) as status:
+                    with st.container(height=460):
+                        st_folium(fm.map, use_container_width=True, height=400,
+                                  returned_objects=[])
+                    status.update(
+                        state="complete",
+                        label="_Map Loaded_ : **Click on the markers to see the landmark name and similarity score.**",
+                        expanded=True,
+                    )
                 st.write(
-                    """
-                    ---
-                    """
-                )
-                st.write(
-                    """
+                    """ 
                     ## Reviews:
                     """
                 )
@@ -432,7 +455,8 @@ class Landmarker(FoliumMap):
                             username = st.text_input(
                                 label="Username", help="Enter your username."
                             )
-                            review = st.text_area(label="Review", help="Enter your review.")
+                            review = st.text_area(
+                                label="Review", help="Enter your review.")
                             score = st.slider(
                                 label="Score",
                                 min_value=1,
@@ -441,7 +465,8 @@ class Landmarker(FoliumMap):
                                 help="Choose a score.",
                                 step=1,
                             )
-                            submit_button = st.form_submit_button(label="Submit")
+                            submit_button = st.form_submit_button(
+                                label="Submit")
 
                         if submit_button:
                             if username and review and score:
@@ -466,13 +491,15 @@ class Landmarker(FoliumMap):
                                     masked_words = []
                                     for word in words:
                                         if len(word) > 3:
-                                            masked_word = word[:2] + "\\*" * (len(word) - 3) + word[-1]
+                                            masked_word = word[:2] + "\\*" * \
+                                                (len(word) - 3) + word[-1]
                                         else:
                                             masked_word = word
                                         masked_words.append(masked_word)
                                     return ' '.join(masked_words)
 
-                                st.markdown(f"##### {mask_username(review['Username'])}")
+                                st.markdown(
+                                    f"##### {mask_username(review['Username'])}")
                                 st.markdown(
                                     f""" {"**Excellent**" if review['Score10'] >= 9 else "**Good**" if review['Score10'] >= 7 else "**Average**" if review['Score10'] >= 5 else "**Poor**" if review['Score10'] >= 3 else "**Terrible**"} ({"⭐" * 1 if review['Score10'] <= 2 else "⭐" * 2 if review['Score10'] <= 4 else "⭐" * 3 if review['Score10'] <= 6 else "⭐" * 4 if review['Score10'] <= 8 else "⭐" * 5})"""
                                 )
@@ -484,16 +511,25 @@ class Landmarker(FoliumMap):
                                 - No reviews yet. Be the first one to review this landmark!
                                 """
                             )
-                    with st.expander("**Click here to see AI generated review summary.**"):
+                    with st.expander("**Click here to see AI generated review summary.**", expanded=True):
                         if reviews:
-                            prompt = f"Craft a professional and concise 2-3 sentence review summary about {landmark_most_matched} in {city}, {country} considering the reviews: {', '.join([r['Review'] for r in reviews])}."
+                            prompt = f"Craft a professional and concise 2-3 sentence review summary about {landmark_most_matched} in {city}, {country} considering the reviews: {', '.join([r['Review'] for r in reviews])}. Focus on verifiable information and avoid claims without evidence (e.g., rumors, speculation). At the end mention unverifiable/unrelated claims if any."
                             summary = self.summarizer.summarize_review(prompt)
+                            # same problem with string object, to fix convert to str
+                            summary = str(summary).strip()
                             st.write(
                                 f"Overall Score: {round(sum([r['Score10'] for r in reviews])/len(reviews), 2)}"
                             )
                             st.write(
                                 f"""
                                 > **{summary}**
+                                """
+                            )
+                            st.warning(
+                                """
+                                ###### The review summary is generated by the AI model.
+                                - The summary is generated based on the reviews.
+                                - It may not be accurate, please verify the information before using it.
                                 """
                             )
                         else:
@@ -516,6 +552,6 @@ class Landmarker(FoliumMap):
             st.write("")
         footer = """
         ---
-        ###### This app was created by _[Elshad Sabziyev](https://www.github.com/elshadsabziyev)_ using _[Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision)_, _[Folium](https://python-visualization.github.io/folium/)_ and _[OpenAI API](https://openai.com)_.
+        ###### This app was created by _[Elshad Sabziyev](https://www.github.com/elshadsabziyev)_ using _[Streamlit](https://www.streamlit.io/), [Google Cloud Vision](https://cloud.google.com/vision)_, _[Folium](https://python-visualization.github.io/folium/)_ and _[TogetherAI](https://api.together.ai/)_.
         """
         st.markdown(footer, unsafe_allow_html=True)

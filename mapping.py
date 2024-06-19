@@ -12,6 +12,7 @@ import streamlit.components.v1 as components
 DEFAULT_ZOOM_START = 2
 ACCURACY_HEATMAP_RADIUS = 50
 
+
 class FoliumMap:
     # Class definitions
     """
@@ -218,7 +219,8 @@ class FoliumMap:
         confidence (str): Confidence score of the landmark detection.
         """
         try:
-            confidence_score = float(confidence.split(": ")[1].strip("%")) / 100
+            confidence_score = float(
+                confidence.split(": ")[1].strip("%")) / 100
         except Exception as e:
             st.error(
                 f"""
@@ -262,7 +264,8 @@ class FoliumMap:
             "</svg>",
         )
 
-        icon = self._get_marker_icon(confidence_score, icon_pin, icon_star, icon_x)
+        icon = self._get_marker_icon(
+            confidence_score, icon_pin, icon_star, icon_x)
 
         folium.Marker(
             location=[lat, lon],
@@ -402,11 +405,8 @@ class FoliumMap:
         """
 
         try:
-            components.html(
-                self.map._repr_html_(),
-                width=max_content_width,
-                height=max_content_width * 0.6,
-            )
+
+            return self.map  # Return the map
 
         except Exception as e:
             st.error(

@@ -1,4 +1,4 @@
-# NOTE: This file contains the Credentials class which is used to authenticate with the Google Cloud Vision API and OpenAI API.
+# NOTE: This file contains the Credentials class which is used to authenticate with the Google Cloud Vision API and TogetherAI API.
 
 # Import necessary libraries
 import streamlit as st
@@ -20,7 +20,8 @@ class Credentials:
         # These secrets are used to authenticate with the Google Cloud Vision API
         self.GCP_credentials = self.get_VertexAI_credentials_from_secrets()
         self.Firestore_credentials = self.get_Firestore_credentials_from_secrets()
-        self.OpenAI_credentials = st.secrets["OpenAI"]["openai_api_key"]
+        self.TogetherAI_credentials = st.secrets["TogetherAI"]["api_key"]
+
     def get_Firestore_credentials_from_secrets(self):
         """
         Extracts the credentials from Streamlit secrets and creates a credentials object.
@@ -54,13 +55,14 @@ class Credentials:
                 Error: {e}
                 ### Error: Invalid credentials.
                 - Error Code: 0x001
-                - There may be issues with Google Cloud Vision API or OpenAI API.
+                - There may be issues with Google Cloud Vision API or TogetherAI API.
                 - Another possible reason is that credentials you provided are invalid or expired.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
                 """
             )
             st.stop()
+
     def get_VertexAI_credentials_from_secrets(self):
         """
         Extracts the credentials from Streamlit secrets and creates a credentials object.
@@ -94,7 +96,7 @@ class Credentials:
                 Error: {e}
                 ### Error: Invalid credentials.
                 - Error Code: 0x001
-                - There may be issues with Google Cloud Vision API or OpenAI API.
+                - There may be issues with Google Cloud Vision API or TogetherAI API.
                 - Another possible reason is that credentials you provided are invalid or expired.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
