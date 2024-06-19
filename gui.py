@@ -143,7 +143,7 @@ class Landmarker(FoliumMap):
             unsafe_allow_html=True,
         )
         st.sidebar.title("Upload an Image")
-        with st.sidebar.expander("_**Click here to toggle the help view**_", expanded=True):
+        with st.sidebar.expander("_**Click here to toggle the help view**_", expanded=False):
             st.write("""
 # Welcome to the Landmark Detection App!
 
