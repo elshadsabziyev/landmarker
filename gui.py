@@ -1,6 +1,3 @@
-# NOTE: This file is part of the Landmarker app.
-
-# Import necessary libraries
 import streamlit as st
 from PIL import Image as Img
 import base64
@@ -11,21 +8,11 @@ from ai_summary import MockOpenAI_LLM, AI_Summary
 from firestore import Firestore
 from streamlit_folium import st_folium
 
-# Constants
 SUPPORTED_FORMATS = ["png", "jpg", "jpeg", "webp"]
 DEBUG_MODE_WARNING_ENABLED = True
 
 
-# TODO: Refactor and add other parent classes
-class Landmarker(FoliumMap):
-    # Class definitions
-    """
-    The Landmarker class is a child class of the GoogleCloudVision and FoliumMap classes.
-    It is the main class of the Credentials.
-    It uses the GoogleCloudVision class to perform landmark detection on an image.
-    It uses the FoliumMap class to create a Folium map and add markers to the map.
-    """
-
+class Landmarker:
     def __init__(self, debug=False):
         super().__init__()
         st.logo(image="logo.png")
@@ -64,7 +51,7 @@ class Landmarker(FoliumMap):
                 "Get Help": "mailto:landmarker+elshad.sabziyev@yahoo.com",
                 "Report a Bug": "https://www.github.com/elshadsabziyev/landmarker/issues",
                 "About": """
-                # Landmarker
+                # Land~Marker
                 ### Created by:
                 - [Elshad Sabziyev](https://www.github.com/elshadsabziyev)
                 """,
@@ -72,11 +59,6 @@ class Landmarker(FoliumMap):
         )
 
     def main(self):
-        """
-        Main function of the app.
-        """
-
-        # Set the page title and favicon
         if self.debug and DEBUG_MODE_WARNING_ENABLED:
             st.warning(
                 """
@@ -105,7 +87,6 @@ class Landmarker(FoliumMap):
                 top: 0px;
                 font-size: 4.0em;
             }
-
             @keyframes gradient {
                 0% {background-position: 0% 50%;}
                 50% {background-position: 100% 50%;}
@@ -115,8 +96,6 @@ class Landmarker(FoliumMap):
                 animation: gradient 2.5s ease-in-out infinite;
             }
         </style>
-
-
         <div class="title">
         LAND~ MARKER
         </div>
@@ -126,37 +105,30 @@ class Landmarker(FoliumMap):
         with st.sidebar.expander("_**Click here to toggle the help view**_", expanded=False):
             st.write("""
 # Welcome to the Landmark Detection App!
-
 This app uses Google Cloud Vision to detect landmarks in images.
-
 ## How to use this app:
-
 1. **Upload an image**: Use the upload widget to upload an image of a landmark. The image should be in a common format like JPEG or PNG.
-
 2. **Wait for the app to process the image**: The app will send the image to Google Cloud Vision, which will analyze the image and identify any landmarks it contains. This process may take a few seconds.
-
 3. **View the results**: The app will display the landmarks detected by Google Cloud Vision.
-
 ## Tips for best results:
-
 - Use clear, high-resolution images. The better the quality of the image, the more likely it is that Google Cloud Vision will be able to identify the landmark.
-
 - Try to make sure the landmark is the main focus of the image. If the landmark is in the background or partially obscured, it may be harder for Google Cloud Vision to identify it.
-
 - Google Cloud Vision can identify many famous landmarks, like the Eiffel Tower or the Grand Canyon. If you're not sure what to upload, try starting with a picture of a well-known landmark.
-
 We hope you enjoy using the Landmark Detection App!
 """)
-
-        # Initialize Google Cloud Vision and Folium Map
         gc = self.gc
         fm = self.fm
-        # Create a switch to toggle between satellite and normal mode
         camera = st.sidebar.toggle(
             label="Camera", value=False, help="Switch on the camera."
         )
         if camera:
-            st.write(" - Privacy Notice: Camera is on")
+            st.warning(
+                """
+                ### Privacy Warning: Camera is on.
+                - Please make sure you are pointing the camera at a landmark.
+                - The camera will take a snapshot when you click on the upload button.
+                """
+            )
             try:
                 uploaded_file = st.sidebar.camera_input(
                     label="Point the camera at a landmark",
@@ -164,9 +136,8 @@ We hope you enjoy using the Landmark Detection App!
             except Exception as e:
                 st.warning(
                     f"""
-                    Error: {e}
                     ### Error: Camera could not be turned on.
-                    - Error Code: 0x012
+                    - Error Code: 1x000
                     - There may be issues with your camera.
                     - Try enabling the camera in your browser/OS settings.
                     - You can manually upload an image of a landmark.
@@ -185,16 +156,14 @@ We hope you enjoy using the Landmark Detection App!
             except Exception as e:
                 st.warning(
                     f"""
-                    Error: {e}
                     ### Error: Image could not be uploaded.
-                    - Error Code: 0x013
+                    - Error Code: 1x001
                     - There may be issues with your image.
                     - Please make sure you have uploaded a valid image.
                     - Please make sure the image is in one of the supported formats (png, jpg, jpeg, webp).
                     - Please try again. If the problem persists, please contact the developer.
                     """
                 )
-
         if uploaded_file is not None:
             image = Img.open(uploaded_file)
             st.sidebar.image(
@@ -203,8 +172,6 @@ We hope you enjoy using the Landmark Detection App!
                 use_column_width=True,
             )
         else:
-
-            # Display the app instructions
             with st.expander("_**Click here to toggle the help view**_", expanded=True):
                 st.markdown(
                     """
@@ -218,7 +185,6 @@ We hope you enjoy using the Landmark Detection App!
         landmark_most_matched_score = 0
         lat_most_matched = 0
         lon_most_matched = 0
-        # If an image is uploaded, perform landmark detection and add markers to the map
         if uploaded_file is not None:
             landmarks = gc.find_landmark(uploaded_file)
             for landmark in landmarks:
@@ -234,49 +200,37 @@ We hope you enjoy using the Landmark Detection App!
                     landmark_most_matched = landmark_name
                     lat_most_matched = lat
                     lon_most_matched = lon
-
-            # Convert the map to HTML
             try:
                 map_html = fm.map._repr_html_()
             except Exception as e:
                 st.error(
                     f"""
-                    Error: {e}
                     ### Error: Map could not loaded.
-                    - Error Code: 0x014
+                    - Error Code: 1x002
                     - Most likely, it's not your fault.
                     - Please try again. If the problem persists, please contact the developer.
                     """
                 )
                 st.stop()
-            # use js or css to make iframe smaller for map_html
-
-            # Adjust the map to show all markers. You may want to zoom out a bit to see the whole map extend by 10%
             try:
                 fm.map.fit_bounds(fm.map.get_bounds(), padding=[
                                   40, 40], max_zoom=17)
             except Exception as e:
                 st.warning(
                     f"""
-                    Error: {e}
                     ### Error: Map could not be adjusted.
-                    - Error Code: 0x015
+                    - Error Code: 1x003
                     - Most likely, it's not your fault.
                     - Please try again, or zoom out a bit to see the whole map.
                     - You can also rerun the app to see if the problem persists.
                     - If the problem persists, please contact the developer.
                     """
                 )
-            # Display a note about zooming out to see the whole map
             if landmarks:
                 a = """ - **Zoom out to see the whole map, or just download it.**"""
-
                 b = """ - **Click on the markers to see the landmark name and similarity score.**"""
-
                 c = """ - **Click on the download button to download the map.**"""
-
                 d = """ - **Toggle the satellite map switch to see the map in satellite mode.**"""
-
                 e = """ - **Toggle the stream summary switch to see the summary stream.**"""
                 with st.expander("**Click here to see the instructions.**"):
                     st.write(a + "\n" + b + "\n" + c + "\n" + d + "\n" + e)
@@ -307,12 +261,9 @@ We hope you enjoy using the Landmark Detection App!
                         st.session_state["summary_stream"] = True
                     else:
                         st.session_state["summary_stream"] = None
-                # Choose the tileset based on the switch
-                _ = fm.satalite_map() if satellite_mode else None
-                # open google maps in a new tab and map should be in satellite mode
+                _ = fm.satellite_map() if satellite_mode else None
             else:
                 pass
-            # Display the map if landmarks are detected, if not display a message
             PREVIOUS_CITY_COUNTRY = ("Kövsər Dönər", "28 May")
             if landmarks:
                 city, country = fm.get_city_country(lat, lon)
@@ -328,7 +279,6 @@ We hope you enjoy using the Landmark Detection App!
                                           label=f"_Location Identified_ : **{city}, {country}**", expanded=True)
                             try:
                                 prompt = f"Craft a professional and concise 80-word summary about {landmark_most_matched} in {city}, {country}. Include the origin of its name, historical significance, and cultural impact. Share fascinating facts that make it a must-visit for tourists."
-                                # TODO: refactor this part and move it to a separate method
                                 if st.session_state.get("summary_stream") is not None:
                                     st.write_stream(
                                         self.summarizer.stream_summary(prompt))
@@ -350,9 +300,8 @@ We hope you enjoy using the Landmark Detection App!
                             except Exception as e:
                                 st.error(
                                     f"""
-                                    Error: {e}
                                     ### Error: LLM Based Summary could not be generated.
-                                    - Error Code: 0x017
+                                    - Error Code: 1x004
                                     - Most likely, it's not your fault.
                                     - Please try again. If the problem persists, please contact the developer.
                                     """
@@ -365,7 +314,6 @@ We hope you enjoy using the Landmark Detection App!
                         # Unknown Location
                         """
                     )
-
                 help_text = (
                     """Satalite map is not available for download. What you are going to download is the normal map."""
                     if satellite_mode
@@ -446,7 +394,6 @@ We hope you enjoy using the Landmark Detection App!
                             )
                             submit_button = st.form_submit_button(
                                 label="Submit")
-
                         if submit_button:
                             if username and review and score:
                                 self.firestore_connection.create_new_review(
@@ -476,7 +423,6 @@ We hope you enjoy using the Landmark Detection App!
                                             masked_word = word
                                         masked_words.append(masked_word)
                                     return ' '.join(masked_words)
-
                                 st.markdown(
                                     f"##### {mask_username(review['Username'])}")
                                 st.markdown(
@@ -494,7 +440,6 @@ We hope you enjoy using the Landmark Detection App!
                         if reviews:
                             prompt = f"Craft a professional and concise 2-3 sentence review summary about {landmark_most_matched} in {city}, {country} considering the reviews: {', '.join([r['Review'] for r in reviews])}. Focus on verifiable information and avoid claims without evidence (e.g., rumors, speculation). At the end mention unverifiable/unrelated claims if any."
                             summary = self.summarizer.summarize_review(prompt)
-                            # same problem with string object, to fix convert to str
                             summary = str(summary).strip()
                             st.write(
                                 f"Overall Score: {round(sum([r['Score10'] for r in reviews])/len(reviews), 2)}"

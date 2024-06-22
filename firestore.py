@@ -5,26 +5,16 @@ from fuzzywuzzy import fuzz
 
 
 class Firestore(Credentials):
-    """
-    The Firestore class is the child class of the Credentials class.
-    It uses the credentials object to authenticate with the Firestore API.
-    It also uses the client object to perform operations on the Firestore database.
-    """
-
     def __init__(self):
-        """
-        Initialize the Firestore class.
-        This class is a child of the Credentials class, so we call the constructor of the parent class.
-        """
         super().__init__()
         try:
-            self.client = firestore.Client(credentials=self.Firestore_credentials)
+            self.client = firestore.Client(
+                credentials=self.Firestore_credentials)
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Invalid credentials.
-                - Error Code: 100
+                - Error Code: 4x000
                 - There may be issues with Firestore API.
                 - Another possible reason is that credentials you provided are invalid or expired.
                 - Most likely, it's not your fault.
@@ -34,12 +24,6 @@ class Firestore(Credentials):
             st.stop()
 
     def get_all_reviews(self):
-        """
-        Get all reviews from the Firestore database.
-
-        Returns:
-        reviews (list): A list of reviews.
-        """
         try:
             reviews_ref = self.client.collection("user_reviews")
             reviews = self._get_reviews(reviews_ref)
@@ -47,9 +31,8 @@ class Firestore(Credentials):
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Failed to retrieve reviews.
-                - Error Code: 101
+                - Error Code: 4x001
                 - There may be issues with Firestore API.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
@@ -58,15 +41,6 @@ class Firestore(Credentials):
             return None
 
     def _get_reviews(self, reviews_ref):
-        """
-        Get all reviews from the Firestore database.
-
-        Args:
-        reviews_ref (firestore.CollectionReference): A reference to the reviews collection.
-
-        Returns:
-        reviews (list): A list of reviews.
-        """
         try:
             reviews = []
             for review in reviews_ref.stream():
@@ -75,9 +49,8 @@ class Firestore(Credentials):
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Failed to retrieve reviews.
-                - Error Code: 102
+                - Error Code: 4x002
                 - There may be issues with Firestore API.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
@@ -86,19 +59,6 @@ class Firestore(Credentials):
             return None
 
     def create_new_review(self, review, landmark, coordinates, score, username):
-        """
-        Create a new review in the Firestore database.
-
-        Args:
-        review (str): The review text.
-        landmark (str): The landmark name.
-        coordinates (dict): The coordinates of the landmark.
-        score (int): The score of the review.
-        username (str): The username of the reviewer. Also used as the document ID.
-
-        Returns:
-        None
-        """
         try:
             reviews_ref = self.client.collection("user_reviews")
             self._create_review(
@@ -107,9 +67,8 @@ class Firestore(Credentials):
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Failed to save new review.
-                - Error Code: 103
+                - Error Code: 4x003
                 - There may be issues with Firestore API.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
@@ -119,20 +78,6 @@ class Firestore(Credentials):
     def _create_review(
         self, reviews_ref, review, landmark, coordinates, score, username
     ):
-        """
-        Create a new review in the Firestore database.
-
-        Args:
-        reviews_ref (firestore.CollectionReference): A reference to the reviews collection.
-        review (str): The review text.
-        landmark (str): The landmark name.
-        coordinates (dict): The coordinates of the landmark.
-        score (int): The score of the review.
-        username (str): The username of the reviewer. Also used as the document ID.
-
-        Returns:
-        None
-        """
         try:
             review_data = {
                 "Username": username,
@@ -145,9 +90,8 @@ class Firestore(Credentials):
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Failed to save new review.
-                - Error Code: 104
+                - Error Code: 4x004
                 - There may be issues with Firestore API.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
@@ -155,18 +99,6 @@ class Firestore(Credentials):
             )
 
     def get_review_for_landmark(self, long, lat, accuracy_range, landmark_name):
-        """
-        Get all reviews for a landmark from the Firestore database.
-
-        Args:
-        long (float): The longitude of the landmark.
-        lat (float): The latitude of the landmark.
-        accuracy_range (float): The accuracy range of the landmark.
-        landmark_name (str): The name of the landmark.
-
-        Returns:
-        reviews (list): A list of reviews.
-        """
         try:
             reviews_ref = self.client.collection("user_reviews")
             reviews = self._get_reviews_for_landmark(
@@ -176,9 +108,8 @@ class Firestore(Credentials):
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Failed to retrieve reviews for landmark.
-                - Error Code: 105
+                - Error Code: 4x005
                 - There may be issues with Firestore API.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
@@ -189,19 +120,6 @@ class Firestore(Credentials):
     def _get_reviews_for_landmark(
         self, reviews_ref, long, lat, accuracy_range, landmark_name
     ):
-        """
-        Get all reviews for a landmark from the Firestore database.
-
-        Args:
-        reviews_ref (firestore.CollectionReference): A reference to the reviews collection.
-        long (float): The longitude of the landmark.
-        lat (float): The latitude of the landmark.
-        accuracy_range (float): The accuracy range of the landmark.
-        landmark_name (str): The name of the landmark.
-
-        Returns:
-        reviews (list): A list of reviews.
-        """
         try:
             reviews = []
             for review in reviews_ref.stream():
@@ -219,39 +137,16 @@ class Firestore(Credentials):
                 ):
                     reviews.append(review_data)
             if reviews:
-                 return reviews
-            return None 
+                return reviews
+            return None
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
                 ### Error: Failed to retrieve reviews for landmark.
-                - Error Code: 106
+                - Error Code: 4x006
                 - There may be issues with Firestore API.
                 - Most likely, it's not your fault.
                 - Please try again. If the problem persists, please contact the developer.
                 """
             )
             return None
-
-
-def test_firestore():
-    """
-    Test the Firestore class.
-    """
-    firestore = Firestore()
-    print(firestore.get_all_reviews())
-    print(
-        firestore.create_new_review(
-            "This is a test review",
-            "Test Landmark",
-            "0.1/0.1",
-            5,
-            "Test User",
-        )
-    )
-    print(firestore.get_review_for_landmark(0, 0, 0.1, "Test Landmark"))
-
-
-if __name__ == "__main__":
-    test_firestore()

@@ -1,6 +1,3 @@
-# NOTE: This file is the main file of the Streamlit app.
-
-# Import necessary libraries
 import streamlit as st
 from gui import Landmarker
 
@@ -15,9 +12,8 @@ if __name__ == "__main__":
     except Exception as e:
         st.error(
             f"""
-            Error: {e}
             ### Error: App could not be loaded.
-            - Error Code: 0x016
+            - Error Code: 0x000
             - Most likely, it's not your fault.
             - Please try again. If the problem persists, please contact the developer.
             """
