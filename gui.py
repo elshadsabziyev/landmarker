@@ -60,6 +60,15 @@ class Landmarker(FoliumMap):
             page_icon="logo.png",
             layout="wide",
             initial_sidebar_state="auto",
+            menu_items={
+                "Get Help": "mailto:landmarker+elshad.sabziyev@yahoo.com",
+                "Report a Bug": "https://www.github.com/elshadsabziyev/landmarker/issues",
+                "About": """
+                # Landmarker
+                ### Created by:
+                - [Elshad Sabziyev](https://www.github.com/elshadsabziyev)
+                """,
+            },
         )
 
     def main(self):
