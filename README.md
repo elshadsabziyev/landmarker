@@ -1,17 +1,26 @@
 # LandMarker (Landmark Marker) 🗺️📌
 
 ## Table of Contents
-- 🌟 [Introduction](#-introduction)
-- ⭐ [Features](#-features)
-- 💻 [Technologies Used](#-technologies-used)
-- 🛠️ [Installation](#-installation)
-- 🚀 [Usage](#-usage)
-- 🌐 [Deployment](#-deployment)
-- 🏗️ [Architecture](#-architecture)
-- 🛣️ [Roadmap](#-roadmap)
-- 👨‍💻 [Project Team](#-project-team)
-- 🤝 [Contributing](#-contributing)
-- 📝 [License](#-license)
+- [LandMarker (Landmark Marker) 🗺️📌](#landmarker-landmark-marker-️)
+  - [Table of Contents](#table-of-contents)
+  - [🌟 Introduction](#-introduction)
+  - [⭐ Features](#-features)
+  - [💻 Technologies Used](#-technologies-used)
+  - [🛠️ Installation](#️-installation)
+  - [🚀 Usage](#-usage)
+  - [🌐 Deployment](#-deployment)
+  - [🏗️ Architecture](#️-architecture)
+    - [Components](#components)
+    - [Workflow](#workflow)
+  - [🛣️ Roadmap](#️-roadmap)
+    - [Version 1.0.0 (Initial Release)](#version-100-initial-release)
+    - [Version 1.1.0](#version-110)
+    - [Version 2.0.0 (Previous Release)](#version-200-previous-release)
+    - [Version 2.1.0 (Current Release)](#version-210-current-release)
+    - [Future Enhancements](#future-enhancements)
+  - [👨‍💻 Project Team](#-project-team)
+  - [🤝 Contributing](#-contributing)
+  - [📝 License](#-license)
 
 ---
 
@@ -147,7 +156,7 @@ For local usage, credentials should be stored in a secret.toml file. For deploym
 - Improved documentation and codebase organization.
 - Fix for map responsiveness and display issues.
   
-### Version 2.0.0 (Current Release)
+### Version 2.0.0 (Previous Release)
 - OpenAI API integration for short summary about the landmark.
 - Streamlit Sharing deployment guide included.
 - Enhanced user interface and error handling.
@@ -155,6 +164,13 @@ For local usage, credentials should be stored in a secret.toml file. For deploym
 - Additional features and enhancements.
 - Bug fixes and performance improvements.
 - Updated dependencies and overall system stability.
+
+### Version 2.1.0 (Current Release)
+- New theme and styling for the user interface.
+- Improved error handling and user feedback.
+- Enhanced documentation and codebase organization.
+- Cache implementation for improved performance.
+- New AI summary provider - TogetherAI.
 
 ### Future Enhancements
 - Real-time camera capture capabilities for on-the-fly landmark detection.
