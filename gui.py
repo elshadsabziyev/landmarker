@@ -113,13 +113,6 @@ class Landmarker(FoliumMap):
         </div>
         """
         st.markdown(title, unsafe_allow_html=True)
-
-        st.markdown(
-            """
-            <link rel="shortcut icon" href="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/google/274/camera_1f4f7.png" type="image/png">
-            """,
-            unsafe_allow_html=True,
-        )
         st.sidebar.title("Upload an Image")
         with st.sidebar.expander("_**Click here to toggle the help view**_", expanded=False):
             st.write("""
