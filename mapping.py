@@ -396,12 +396,12 @@ class FoliumMap:
         city, country = self.get_location_details(lat, lon)
         return city, country
 
-    def display_map(self, max_content_width, max_content_height):
+    def display_map(self):
         """
         Display the map on Streamlit.
 
         Parameters:
-        max_content_width (int): The maximum width of the map.
+        None
         """
 
         try:
@@ -411,7 +411,7 @@ class FoliumMap:
         except Exception as e:
             st.error(
                 f"""
-                Error: {e}
+                Error: {e}  
                 ### Error: Map could not be displayed.
                 - Error Code: 0x011
                 - Most likely, it's not your fault.
