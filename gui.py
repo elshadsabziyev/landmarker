@@ -57,7 +57,7 @@ class Landmarker(FoliumMap):
     def set_page_config(self):
         st.set_page_config(
             page_title="Landmark Detection",
-            page_icon="🗿",
+            page_icon="logo.png",
             layout="wide",
             initial_sidebar_state="auto",
         )
