@@ -15,13 +15,27 @@ DEBUG_MODE_WARNING_ENABLED = True
 class Landmarker:
     def __init__(self, debug=False):
         super().__init__()
-        st.logo(image="logo.png")
         self.debug = debug
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
         self.summarizer = self.init_TogetherAI()
         self.firestore_connection = self.init_firestore()
         self.set_page_config()
+        st.html("""
+        <style>
+        [data-testid=collapsedControl]::after {
+            content: "Open Sidebar";
+            position: absolute;
+            left: 100%; /* Position the text to the right of the element */
+            top: 44%; /* Align the top of the text at the middle of the button */
+            transform: translateY(-50%); /* Center the text vertically */
+            white-space: nowrap; /* Ensure the text does not wrap */
+            margin-left: 10px; /* Space between the text and the element */
+            
+            /* New gradient background */
+            color: hsla(330, 36%, 53%, 1);
+        }
+        """,)
 
     def init_google_cloud_vision(self):
         if self.debug:
@@ -101,7 +115,6 @@ class Landmarker:
         </div>
         """
         st.markdown(title, unsafe_allow_html=True)
-        st.sidebar.title("Upload an Image")
         with st.sidebar.expander("_**Click here to toggle the help view**_", expanded=False):
             st.write("""
 # Welcome to the Landmark Detection App!
@@ -118,9 +131,10 @@ We hope you enjoy using the Landmark Detection App!
 """)
         gc = self.gc
         fm = self.fm
-        camera = st.sidebar.toggle(
-            label="Camera", value=False, help="Switch on the camera."
-        )
+        with st.sidebar.container(border=True):
+            camera = st.toggle(
+                label="Camera", value=False, help="Switch on the camera."
+            )
         if camera:
             st.warning(
                 """
@@ -130,9 +144,11 @@ We hope you enjoy using the Landmark Detection App!
                 """
             )
             try:
-                uploaded_file = st.sidebar.camera_input(
-                    label="Point the camera at a landmark",
-                )
+                with st.sidebar.expander("_Please point the camera at a **landmark**._", expanded=True):
+                    uploaded_file = st.camera_input(
+                        label="Take a snapshot of a landmark.",
+                        label_visibility="collapsed",
+                    )
             except Exception as e:
                 st.warning(
                     f"""
@@ -147,12 +163,15 @@ We hope you enjoy using the Landmark Detection App!
                 )
         else:
             try:
-                uploaded_file = st.sidebar.file_uploader(
-                    label="Upload an image",
-                    type=SUPPORTED_FORMATS,
-                    accept_multiple_files=False,
-                    help="Upload an image of a landmark.",
-                )
+                with st.sidebar.expander("_Please upload an image of a **landmark**._", expanded=True):
+                    uploaded_file = st.file_uploader(
+                        type=SUPPORTED_FORMATS,
+                        accept_multiple_files=False,
+                        help="Upload an image of a landmark.",
+                        label_visibility="collapsed",
+                        label="Upload Image",
+                    )
+
             except Exception as e:
                 st.warning(
                     f"""
