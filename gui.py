@@ -3,7 +3,6 @@
 # Import necessary libraries
 import streamlit as st
 from PIL import Image as Img
-from streamlit_js_eval import streamlit_js_eval
 import base64
 import time
 from mapping import FoliumMap
@@ -36,27 +35,6 @@ class Landmarker(FoliumMap):
         self.summarizer = self.init_TogetherAI()
         self.firestore_connection = self.init_firestore()
         self.set_page_config()
-        self.screen_width = 0
-        self.screen_height = 0
-        try:
-            with st.empty():
-                _screen_res = streamlit_js_eval(
-                    js_expressions="""
-            function getScreenResolution() {
-                return  window.innerWidth + "x" + window.screen.height;
-            }
-            getScreenResolution();
-            """,
-                    want_output=True,
-                    key="SCR_W",
-                )
-
-                if _screen_res.split("x")[0] and _screen_res.split("x")[1]:
-                    self.screen_width = int(_screen_res.split("x")[0])
-                    self.screen_height = int(_screen_res.split("x")[1])
-                st.empty()
-        except Exception as e:
-            pass
 
     def init_google_cloud_vision(self):
         if self.debug:
@@ -215,7 +193,6 @@ We hope you enjoy using the Landmark Detection App!
                     """
                 )
 
-        # If image is uploaded, display the image on sidebar but limit the image height to 300 pixels
         if uploaded_file is not None:
             image = Img.open(uploaded_file)
             st.sidebar.image(
