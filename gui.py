@@ -28,7 +28,7 @@ class Landmarker(FoliumMap):
 
     def __init__(self, debug=False):
         super().__init__()
-        st.logo(image="logo.png", link="https://landmarker.streamlit.app/")
+        st.logo(image="logo.png")
         self.debug = debug
         self.gc = self.init_google_cloud_vision()
         self.fm = self.init_folium_map()
