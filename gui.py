@@ -166,11 +166,17 @@ We hope you enjoy using the Landmark Detection App!
                 )
         if uploaded_file is not None:
             image = Img.open(uploaded_file)
-            st.sidebar.image(
-                image,
-                caption="Uploaded Image",
-                use_column_width=True,
-            )
+            with st.sidebar.status("Processing the image...", expanded=False) as status:
+                st.image(
+                    image,
+                    caption="Uploaded Image",
+                    use_column_width=True,
+                )
+                status.update(
+                    state="complete",
+                    label="_Image Processed_ : **Go to the main page to see the results.**",
+                    expanded=True,
+                )
         else:
             with st.expander("_**Click here to toggle the help view**_", expanded=True):
                 st.markdown(
